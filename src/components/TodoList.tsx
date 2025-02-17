@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Plus, X, Check, Calendar } from 'lucide-react';
-import { useTodo, TodoItem } from '@/contexts/TodoContext';
+import { useTodo } from '@/contexts/TodoContext';
+import type { TodoItem } from '@/contexts/TodoContext';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,14 +115,14 @@ export function TodoList() {
 
       <div className="space-y-2">
         {filteredTodos.map((todo) => (
-          <TodoItem key={todo.id} todo={todo} />
+          <TodoItemComponent key={todo.id} todo={todo} />
         ))}
       </div>
     </div>
   );
 }
 
-function TodoItem({ todo }: { todo: TodoItem }) {
+function TodoItemComponent({ todo }: { todo: TodoItem }) {
   const { toggleTodo, deleteTodo, categories } = useTodo();
   const category = categories.find(c => c.id === todo.categoryId);
 
