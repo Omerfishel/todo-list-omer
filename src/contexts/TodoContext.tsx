@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +20,7 @@ export type TodoItem = {
   categoryId: string;
   reminder?: Date;
   description?: string;
+  content?: string;
   subItems: SubItem[];
 };
 
@@ -36,6 +36,7 @@ type TodoContextType = {
   deleteSubItem: (todoId: string, subItemId: string) => void;
   toggleSubItem: (todoId: string, subItemId: string) => void;
   updateTodoDescription: (todoId: string, description: string) => void;
+  updateTodoContent: (todoId: string, content: string) => void;
 };
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
@@ -59,6 +60,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       categoryId,
       reminder,
       description,
+      content: '',
       subItems: [],
     };
     setTodos([...todos, newTodo]);
@@ -151,6 +153,12 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     ));
   };
 
+  const updateTodoContent = (todoId: string, content: string) => {
+    setTodos(todos.map(todo =>
+      todo.id === todoId ? { ...todo, content } : todo
+    ));
+  };
+
   return (
     <TodoContext.Provider value={{
       todos,
@@ -164,6 +172,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       deleteSubItem,
       toggleSubItem,
       updateTodoDescription,
+      updateTodoContent,
     }}>
       {children}
     </TodoContext.Provider>

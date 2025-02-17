@@ -4,8 +4,10 @@ import { Plus, X, Check, Calendar, Clock } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
 import type { TodoItem } from '@/contexts/TodoContext';
 import { format } from 'date-fns';
+import { useSwipeable } from 'react-swipeable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { RichTextEditor } from './RichTextEditor';
 import {
   Select,
   SelectContent,
@@ -147,83 +149,81 @@ export function TodoList() {
 }
 
 function TodoItemComponent({ todo }: { todo: TodoItem }) {
-  const { toggleTodo, deleteTodo, categories, addSubItem, deleteSubItem, toggleSubItem, updateTodoDescription } = useTodo();
+  const { toggleTodo, deleteTodo, categories, addSubItem, deleteSubItem, toggleSubItem, updateTodoContent } = useTodo();
   const category = categories.find(c => c.id === todo.categoryId);
   const [newSubItem, setNewSubItem] = useState('');
-  const [description, setDescription] = useState(todo.description || '');
 
-  const handleAddSubItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newSubItem.trim()) {
-      addSubItem(todo.id, newSubItem.trim());
-      setNewSubItem('');
-    }
-  };
-
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newDescription = e.target.value;
-    setDescription(newDescription);
-    updateTodoDescription(todo.id, newDescription);
-  };
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: () => toggleTodo(todo.id),
+    onSwipedLeft: () => deleteTodo(todo.id),
+    trackMouse: true,
+    delta: 50,
+  });
 
   return (
-    <Accordion type="single" collapsible>
-      <AccordionItem value="item-1" className="border rounded-lg bg-white">
-        <div className="flex items-center gap-4 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => toggleTodo(todo.id)}
-            className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
-          >
-            <Check className={`h-4 w-4 ${todo.completed ? 'opacity-100' : 'opacity-30'}`} />
-          </Button>
-          
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <AccordionTrigger className="hover:no-underline">
-                <span className={`text-sm ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-                  {todo.title}
-                </span>
-              </AccordionTrigger>
-              {category && (
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs"
-                  style={{ backgroundColor: category.color }}
-                >
-                  {category.name}
-                </span>
+    <div
+      {...swipeHandlers}
+      className="transition-all duration-300 ease-in-out hover:shadow-lg"
+    >
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1" className="border rounded-lg bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-4 p-4 group">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => toggleTodo(todo.id)}
+              className={`shrink-0 ${todo.completed ? 'text-green-500' : ''} transition-colors duration-200`}
+            >
+              <Check className={`h-4 w-4 ${todo.completed ? 'opacity-100' : 'opacity-30'}`} />
+            </Button>
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <AccordionTrigger className="hover:no-underline">
+                  <span className={`text-sm ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+                    {todo.title}
+                  </span>
+                </AccordionTrigger>
+                {category && (
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs animate-fadeIn"
+                    style={{ backgroundColor: category.color }}
+                  >
+                    {category.name}
+                  </span>
+                )}
+              </div>
+              {todo.reminder && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Reminder: {format(todo.reminder, 'PPp')}
+                </div>
               )}
             </div>
-            {todo.reminder && (
-              <div className="text-xs text-gray-500 mt-1">
-                Reminder: {format(todo.reminder, 'PPp')}
-              </div>
-            )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteTodo(todo.id)}
+              className="shrink-0 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => deleteTodo(todo.id)}
-            className="shrink-0 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <AccordionContent className="px-4 pb-4">
-          <div className="space-y-4">
-            <textarea
-              value={description}
-              onChange={handleDescriptionChange}
-              placeholder="Add a description..."
-              className="w-full p-2 text-sm border rounded-md"
-              rows={3}
+          <AccordionContent className="px-4 pb-4 space-y-4">
+            <RichTextEditor
+              content={todo.content || ''}
+              onChange={(content) => updateTodoContent(todo.id, content)}
             />
 
-            <div className="space-y-2">
-              <form onSubmit={handleAddSubItem} className="flex gap-2">
+            <div className="space-y-2 animate-slideIn">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (newSubItem.trim()) {
+                  addSubItem(todo.id, newSubItem.trim());
+                  setNewSubItem('');
+                }
+              }} className="flex gap-2">
                 <Input
                   type="text"
                   value={newSubItem}
@@ -240,7 +240,7 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
                 {todo.subItems.map((subItem) => (
                   <div
                     key={subItem.id}
-                    className="flex items-center gap-2 pl-4 text-sm"
+                    className="flex items-center gap-2 pl-4 text-sm group/item animate-slideIn"
                   >
                     <Button
                       variant="ghost"
@@ -257,7 +257,7 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => deleteSubItem(todo.id, subItem.id)}
-                      className="shrink-0 h-6 w-6 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-auto"
+                      className="shrink-0 h-6 w-6 text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity ml-auto"
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -265,9 +265,9 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
                 ))}
               </div>
             </div>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
   );
 }
