@@ -8,22 +8,34 @@ export type Category = {
   color: string;
 };
 
+export type SubItem = {
+  id: string;
+  title: string;
+  completed: boolean;
+};
+
 export type TodoItem = {
   id: string;
   title: string;
   completed: boolean;
   categoryId: string;
   reminder?: Date;
+  description?: string;
+  subItems: SubItem[];
 };
 
 type TodoContextType = {
   todos: TodoItem[];
   categories: Category[];
-  addTodo: (title: string, categoryId: string, reminder?: Date) => void;
+  addTodo: (title: string, categoryId: string, reminder?: Date, description?: string) => void;
   deleteTodo: (id: string) => void;
   toggleTodo: (id: string) => void;
   addCategory: (name: string, color: string) => void;
   deleteCategory: (id: string) => void;
+  addSubItem: (todoId: string, title: string) => void;
+  deleteSubItem: (todoId: string, subItemId: string) => void;
+  toggleSubItem: (todoId: string, subItemId: string) => void;
+  updateTodoDescription: (todoId: string, description: string) => void;
 };
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
@@ -39,13 +51,15 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const { toast } = useToast();
 
-  const addTodo = (title: string, categoryId: string, reminder?: Date) => {
+  const addTodo = (title: string, categoryId: string, reminder?: Date, description?: string) => {
     const newTodo: TodoItem = {
       id: Math.random().toString(36).substring(7),
       title,
       completed: false,
       categoryId,
       reminder,
+      description,
+      subItems: [],
     };
     setTodos([...todos, newTodo]);
     toast({
@@ -89,6 +103,54 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const addSubItem = (todoId: string, title: string) => {
+    setTodos(todos.map(todo => {
+      if (todo.id === todoId) {
+        return {
+          ...todo,
+          subItems: [...todo.subItems, {
+            id: Math.random().toString(36).substring(7),
+            title,
+            completed: false,
+          }],
+        };
+      }
+      return todo;
+    }));
+  };
+
+  const deleteSubItem = (todoId: string, subItemId: string) => {
+    setTodos(todos.map(todo => {
+      if (todo.id === todoId) {
+        return {
+          ...todo,
+          subItems: todo.subItems.filter(item => item.id !== subItemId),
+        };
+      }
+      return todo;
+    }));
+  };
+
+  const toggleSubItem = (todoId: string, subItemId: string) => {
+    setTodos(todos.map(todo => {
+      if (todo.id === todoId) {
+        return {
+          ...todo,
+          subItems: todo.subItems.map(item =>
+            item.id === subItemId ? { ...item, completed: !item.completed } : item
+          ),
+        };
+      }
+      return todo;
+    }));
+  };
+
+  const updateTodoDescription = (todoId: string, description: string) => {
+    setTodos(todos.map(todo =>
+      todo.id === todoId ? { ...todo, description } : todo
+    ));
+  };
+
   return (
     <TodoContext.Provider value={{
       todos,
@@ -98,6 +160,10 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       toggleTodo,
       addCategory,
       deleteCategory,
+      addSubItem,
+      deleteSubItem,
+      toggleSubItem,
+      updateTodoDescription,
     }}>
       {children}
     </TodoContext.Provider>
