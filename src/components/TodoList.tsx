@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -72,22 +71,27 @@ export function TodoList() {
       (filter === 'completed' ? todo.completed : !todo.completed);
     const matchesCategory = !categoryFilter || 
       todo.categoryIds.includes(categoryFilter);
+    const searchLower = searchQuery.toLowerCase();
     const matchesSearch = !searchQuery || 
-      todo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      todo.content?.toLowerCase().includes(searchQuery.toLowerCase());
+      todo.title.toLowerCase().includes(searchLower) ||
+      (todo.content || '').toLowerCase().includes(searchLower) ||
+      (todo.description || '').toLowerCase().includes(searchLower);
     return matchesFilter && matchesCategory && matchesSearch;
   });
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8 animate-fadeIn">
+    <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn">
       <div className="flex gap-4 mb-8">
-        <Input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search tasks..."
-          className="flex-1"
-        />
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tasks..."
+            className="pl-10"
+          />
+        </div>
         <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline">Add Category</Button>
@@ -224,7 +228,7 @@ export function TodoList() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTodos.map((todo) => (
           <TodoItemComponent key={todo.id} todo={todo} />
         ))}
@@ -241,7 +245,9 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
     onSwipedRight: () => toggleTodo(todo.id),
     onSwipedLeft: () => deleteTodo(todo.id),
     trackMouse: true,
-    delta: 50,
+    preventDefaultTouchmoveEvent: true,
+    delta: 10,
+    swipeDuration: 500,
   });
 
   const handleCategoryToggle = (categoryId: string) => {
@@ -257,21 +263,23 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
       className={`
         relative group bg-white rounded-lg shadow-lg overflow-hidden
         transition-all duration-300 ease-in-out hover:shadow-xl
+        transform hover:-translate-y-1
+        min-h-[200px] flex flex-col
         ${todo.completed ? 'animate-scaleOut' : ''}
       `}
     >
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => deleteTodo(todo.id)}
-          className="text-red-500"
+          className="text-red-500 hover:bg-red-50"
         >
           <X className="h-4 w-4" />
         </Button>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center gap-2 mb-3">
           <Button
             variant="ghost"
@@ -298,6 +306,7 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
               className={`
                 px-2 py-0.5 rounded-full text-xs transition-all
                 ${todo.categoryIds.includes(category.id) ? 'opacity-100' : 'opacity-50'}
+                hover:opacity-100
               `}
               style={{ backgroundColor: category.color }}
             >
@@ -306,7 +315,7 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
           ))}
         </div>
 
-        <div className="prose max-w-none">
+        <div className="prose max-w-none flex-1">
           <RichTextEditor
             content={todo.content || ''}
             onChange={(content) => updateTodoContent(todo.id, content)}
@@ -314,8 +323,9 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
         </div>
 
         {todo.reminder && (
-          <div className="text-xs text-gray-500 mt-3">
-            Reminder: {format(todo.reminder, 'PPp')}
+          <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {format(todo.reminder, 'PPp')}
           </div>
         )}
       </div>
