@@ -17,7 +17,7 @@ export type TodoItem = {
   id: string;
   title: string;
   completed: boolean;
-  categoryId: string;
+  categoryIds: string[];
   reminder?: Date;
   description?: string;
   content?: string;
@@ -27,7 +27,7 @@ export type TodoItem = {
 type TodoContextType = {
   todos: TodoItem[];
   categories: Category[];
-  addTodo: (title: string, categoryId: string, reminder?: Date, description?: string) => void;
+  addTodo: (title: string, categoryId: string, content: string, reminder?: Date) => void;
   deleteTodo: (id: string) => void;
   toggleTodo: (id: string) => void;
   addCategory: (name: string, color: string) => void;
@@ -37,6 +37,7 @@ type TodoContextType = {
   toggleSubItem: (todoId: string, subItemId: string) => void;
   updateTodoDescription: (todoId: string, description: string) => void;
   updateTodoContent: (todoId: string, content: string) => void;
+  updateTodoCategories: (todoId: string, categoryIds: string[]) => void;
 };
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
@@ -52,15 +53,14 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const { toast } = useToast();
 
-  const addTodo = (title: string, categoryId: string, reminder?: Date, description?: string) => {
+  const addTodo = (title: string, categoryId: string, content: string = '', reminder?: Date) => {
     const newTodo: TodoItem = {
       id: Math.random().toString(36).substring(7),
       title,
       completed: false,
-      categoryId,
+      categoryIds: categoryId ? [categoryId] : [],
       reminder,
-      description,
-      content: '',
+      content,
       subItems: [],
     };
     setTodos([...todos, newTodo]);
@@ -71,17 +71,31 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTodo = (id: string) => {
-    setTodos(todos.filter(todo => todo.id !== id));
-    toast({
-      title: "Todo deleted",
-      description: "Your todo has been deleted successfully.",
-    });
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, className: 'animate-fadeOut' } : todo
+    ));
+
+    setTimeout(() => {
+      setTodos(todos.filter(todo => todo.id !== id));
+      toast({
+        title: "Todo deleted",
+        description: "Your todo has been deleted successfully.",
+      });
+    }, 300);
   };
 
   const toggleTodo = (id: string) => {
     setTodos(todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     ));
+    
+    const todo = todos.find(t => t.id === id);
+    if (todo && !todo.completed) {
+      toast({
+        title: "Task completed! 🎉",
+        description: "Great job! Keep up the good work!",
+      });
+    }
   };
 
   const addCategory = (name: string, color: string) => {
@@ -99,10 +113,20 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
 
   const deleteCategory = (id: string) => {
     setCategories(categories.filter(category => category.id !== id));
+    setTodos(todos.map(todo => ({
+      ...todo,
+      categoryIds: todo.categoryIds.filter(catId => catId !== id)
+    })));
     toast({
       title: "Category deleted",
       description: "Your category has been deleted successfully.",
     });
+  };
+
+  const updateTodoCategories = (todoId: string, categoryIds: string[]) => {
+    setTodos(todos.map(todo =>
+      todo.id === todoId ? { ...todo, categoryIds } : todo
+    ));
   };
 
   const addSubItem = (todoId: string, title: string) => {
@@ -173,6 +197,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       toggleSubItem,
       updateTodoDescription,
       updateTodoContent,
+      updateTodoCategories,
     }}>
       {children}
     </TodoContext.Provider>

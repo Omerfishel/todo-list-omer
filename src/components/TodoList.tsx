@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, X, Check, Calendar, Clock } from 'lucide-react';
+import { Plus, X, Check, Calendar, Clock, Search, Sparkles } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
 import type { TodoItem } from '@/contexts/TodoContext';
 import { format } from 'date-fns';
@@ -22,19 +22,27 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function TodoList() {
-  const { todos, categories, addTodo } = useTodo();
+  const { todos, categories, addTodo, addCategory } = useTodo();
   const [newTodoTitle, setNewTodoTitle] = useState('');
+  const [newTodoContent, setNewTodoContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id || '');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
   const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,83 +50,146 @@ export function TodoList() {
       const reminder = selectedDate && selectedTime
         ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
         : selectedDate;
-      addTodo(newTodoTitle.trim(), selectedCategory, reminder);
+      addTodo(newTodoTitle.trim(), selectedCategory, newTodoContent, reminder);
       setNewTodoTitle('');
+      setNewTodoContent('');
       setSelectedDate(undefined);
       setSelectedTime('');
     }
   };
 
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      addCategory(newCategoryName.trim(), newCategoryColor);
+      setNewCategoryName('');
+      setNewCategoryColor('#E5DEFF');
+      setIsNewCategoryDialogOpen(false);
+    }
+  };
+
   const filteredTodos = todos.filter(todo => {
-    if (filter === 'completed') return todo.completed;
-    if (filter === 'active') return !todo.completed;
-    return true;
+    const matchesFilter = filter === 'all' || 
+      (filter === 'completed' ? todo.completed : !todo.completed);
+    const matchesCategory = !categoryFilter || 
+      todo.categoryIds.includes(categoryFilter);
+    const matchesSearch = !searchQuery || 
+      todo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      todo.content?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesCategory && matchesSearch;
   });
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-8 animate-fadeIn">
-      <form onSubmit={handleAddTodo} className="flex gap-2">
+    <div className="max-w-4xl mx-auto p-6 space-y-8 animate-fadeIn">
+      <div className="flex gap-4 mb-8">
         <Input
           type="text"
-          value={newTodoTitle}
-          onChange={(e) => setNewTodoTitle(e.target.value)}
-          placeholder="Add a new task..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search tasks..."
           className="flex-1"
         />
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map(category => (
-              <SelectItem
-                key={category.id}
-                value={category.id}
-                className="flex items-center gap-2"
-              >
-                <span
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: category.color }}
-                />
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Calendar className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <div className="p-3">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                initialFocus
+        <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">Add Category</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Category name"
               />
-              {selectedDate && (
-                <div className="mt-3 flex gap-2 items-center">
-                  <Clock className="h-4 w-4" />
-                  <Input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-32"
-                  />
-                </div>
-              )}
+              <Input
+                type="color"
+                value={newCategoryColor}
+                onChange={(e) => setNewCategoryColor(e.target.value)}
+              />
             </div>
-          </PopoverContent>
-        </Popover>
-        <Button type="submit">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </form>
+            <DialogFooter>
+              <Button onClick={handleAddCategory}>Add Category</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      <div className="flex gap-2 justify-center">
+      <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+        <form onSubmit={handleAddTodo} className="space-y-4">
+          <Input
+            type="text"
+            value={newTodoTitle}
+            onChange={(e) => setNewTodoTitle(e.target.value)}
+            placeholder="Task title..."
+            className="text-lg font-semibold"
+          />
+          
+          <RichTextEditor
+            content={newTodoContent}
+            onChange={setNewTodoContent}
+          />
+
+          <div className="flex gap-2">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(category => (
+                  <SelectItem
+                    key={category.id}
+                    value={category.id}
+                    className="flex items-center gap-2"
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <div className="p-3">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                  />
+                  {selectedDate && (
+                    <div className="mt-3 flex gap-2 items-center">
+                      <Clock className="h-4 w-4" />
+                      <Input
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="w-32"
+                      />
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Button type="submit" className="ml-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <div className="flex flex-wrap gap-2 justify-center mb-8">
         <Button
           variant={filter === 'all' ? 'default' : 'outline'}
           onClick={() => setFilter('all')}
@@ -137,9 +208,23 @@ export function TodoList() {
         >
           Completed
         </Button>
+        {categories.map(category => (
+          <Button
+            key={category.id}
+            variant={categoryFilter === category.id ? 'default' : 'outline'}
+            onClick={() => setCategoryFilter(prev => prev === category.id ? '' : category.id)}
+            className="flex items-center gap-2"
+          >
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
+            {category.name}
+          </Button>
+        ))}
       </div>
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredTodos.map((todo) => (
           <TodoItemComponent key={todo.id} todo={todo} />
         ))}
@@ -149,9 +234,8 @@ export function TodoList() {
 }
 
 function TodoItemComponent({ todo }: { todo: TodoItem }) {
-  const { toggleTodo, deleteTodo, categories, addSubItem, deleteSubItem, toggleSubItem, updateTodoContent } = useTodo();
-  const category = categories.find(c => c.id === todo.categoryId);
-  const [newSubItem, setNewSubItem] = useState('');
+  const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
+  const todosCategories = categories.filter(c => todo.categoryIds.includes(c.id));
 
   const swipeHandlers = useSwipeable({
     onSwipedRight: () => toggleTodo(todo.id),
@@ -160,114 +244,81 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
     delta: 50,
   });
 
+  const handleCategoryToggle = (categoryId: string) => {
+    const newCategories = todo.categoryIds.includes(categoryId)
+      ? todo.categoryIds.filter(id => id !== categoryId)
+      : [...todo.categoryIds, categoryId];
+    updateTodoCategories(todo.id, newCategories);
+  };
+
   return (
     <div
       {...swipeHandlers}
-      className="transition-all duration-300 ease-in-out hover:shadow-lg"
+      className={`
+        relative group bg-white rounded-lg shadow-lg overflow-hidden
+        transition-all duration-300 ease-in-out hover:shadow-xl
+        ${todo.completed ? 'animate-scaleOut' : ''}
+      `}
     >
-      <Accordion type="single" collapsible>
-        <AccordionItem value="item-1" className="border rounded-lg bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center gap-4 p-4 group">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => toggleTodo(todo.id)}
-              className={`shrink-0 ${todo.completed ? 'text-green-500' : ''} transition-colors duration-200`}
-            >
-              <Check className={`h-4 w-4 ${todo.completed ? 'opacity-100' : 'opacity-30'}`} />
-            </Button>
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <AccordionTrigger className="hover:no-underline">
-                  <span className={`text-sm ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-                    {todo.title}
-                  </span>
-                </AccordionTrigger>
-                {category && (
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs animate-fadeIn"
-                    style={{ backgroundColor: category.color }}
-                  >
-                    {category.name}
-                  </span>
-                )}
-              </div>
-              {todo.reminder && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Reminder: {format(todo.reminder, 'PPp')}
-                </div>
-              )}
-            </div>
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => deleteTodo(todo.id)}
+          className="text-red-500"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => deleteTodo(todo.id)}
-              className="shrink-0 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => toggleTodo(todo.id)}
+            className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
+          >
+            {todo.completed ? (
+              <Sparkles className="h-4 w-4 animate-scaleIn" />
+            ) : (
+              <Check className="h-4 w-4 opacity-30" />
+            )}
+          </Button>
+          <h3 className={`text-lg font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+            {todo.title}
+          </h3>
+        </div>
+
+        <div className="flex flex-wrap gap-1 mb-3">
+          {categories.map(category => (
+            <button
+              key={category.id}
+              onClick={() => handleCategoryToggle(category.id)}
+              className={`
+                px-2 py-0.5 rounded-full text-xs transition-all
+                ${todo.categoryIds.includes(category.id) ? 'opacity-100' : 'opacity-50'}
+              `}
+              style={{ backgroundColor: category.color }}
             >
-              <X className="h-4 w-4" />
-            </Button>
+              {category.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="prose max-w-none">
+          <RichTextEditor
+            content={todo.content || ''}
+            onChange={(content) => updateTodoContent(todo.id, content)}
+          />
+        </div>
+
+        {todo.reminder && (
+          <div className="text-xs text-gray-500 mt-3">
+            Reminder: {format(todo.reminder, 'PPp')}
           </div>
-
-          <AccordionContent className="px-4 pb-4 space-y-4">
-            <RichTextEditor
-              content={todo.content || ''}
-              onChange={(content) => updateTodoContent(todo.id, content)}
-            />
-
-            <div className="space-y-2 animate-slideIn">
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                if (newSubItem.trim()) {
-                  addSubItem(todo.id, newSubItem.trim());
-                  setNewSubItem('');
-                }
-              }} className="flex gap-2">
-                <Input
-                  type="text"
-                  value={newSubItem}
-                  onChange={(e) => setNewSubItem(e.target.value)}
-                  placeholder="Add a sub-item..."
-                  className="flex-1"
-                />
-                <Button type="submit" size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </form>
-
-              <div className="space-y-2">
-                {todo.subItems.map((subItem) => (
-                  <div
-                    key={subItem.id}
-                    className="flex items-center gap-2 pl-4 text-sm group/item animate-slideIn"
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleSubItem(todo.id, subItem.id)}
-                      className={`shrink-0 h-6 w-6 ${subItem.completed ? 'text-green-500' : ''}`}
-                    >
-                      <Check className={`h-3 w-3 ${subItem.completed ? 'opacity-100' : 'opacity-30'}`} />
-                    </Button>
-                    <span className={subItem.completed ? 'line-through text-gray-400' : ''}>
-                      {subItem.title}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteSubItem(todo.id, subItem.id)}
-                      className="shrink-0 h-6 w-6 text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity ml-auto"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+        )}
+      </div>
     </div>
   );
 }
