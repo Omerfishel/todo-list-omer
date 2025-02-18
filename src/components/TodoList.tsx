@@ -311,10 +311,6 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
       ? 'bg-red-100' 
       : '';
 
-  const transform = isDragging 
-    ? `translateX(${translateX}px)` 
-    : 'translateX(0)';
-
   return (
     <>
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
