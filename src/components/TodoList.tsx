@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -29,6 +28,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function TodoList() {
   const { todos, categories, addTodo, addCategory } = useTodo();
@@ -55,6 +64,12 @@ export function TodoList() {
       setNewTodoContent(''); // Clear the rich text editor content
       setSelectedDate(undefined);
       setSelectedTime('');
+      
+      // Force reset the editor by temporarily unmounting it
+      const editor = document.querySelector('.ProseMirror');
+      if (editor) {
+        editor.innerHTML = '';
+      }
     }
   };
 
@@ -240,95 +255,149 @@ export function TodoList() {
 
 function TodoItemComponent({ todo }: { todo: TodoItem }) {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
-  const todosCategories = categories.filter(c => todo.categoryIds.includes(c.id));
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [translateX, setTranslateX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const swipeHandlers = useSwipeable({
-    onSwipedRight: () => toggleTodo(todo.id),
-    onSwipedLeft: () => deleteTodo(todo.id),
+    onSwiping: (e) => {
+      setIsDragging(true);
+      setTranslateX(e.deltaX);
+    },
+    onSwipedLeft: () => {
+      if (translateX < -100) {
+        setDeleteDialogOpen(true);
+      }
+      setTranslateX(0);
+      setIsDragging(false);
+    },
+    onSwipedRight: () => {
+      if (translateX > 100) {
+        toggleTodo(todo.id);
+      }
+      setTranslateX(0);
+      setIsDragging(false);
+    },
+    onTouchEndOrOnMouseUp: () => {
+      setTranslateX(0);
+      setIsDragging(false);
+    },
     trackMouse: true,
     delta: 10,
     touchEventOptions: { passive: false }
   });
 
-  const handleCategoryToggle = (categoryId: string) => {
-    const newCategories = todo.categoryIds.includes(categoryId)
-      ? todo.categoryIds.filter(id => id !== categoryId)
-      : [...todo.categoryIds, categoryId];
-    updateTodoCategories(todo.id, newCategories);
+  const handleDelete = () => {
+    deleteTodo(todo.id);
+    setDeleteDialogOpen(false);
   };
 
-  return (
-    <div
-      {...swipeHandlers}
-      className={`
-        relative group bg-white rounded-lg shadow-lg overflow-hidden
-        transition-all duration-300 ease-in-out hover:shadow-xl
-        transform hover:-translate-y-1
-        min-h-[200px] flex flex-col
-        ${todo.completed ? 'animate-scaleOut' : ''}
-      `}
-    >
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => deleteTodo(todo.id)}
-          className="text-red-500 hover:bg-red-50"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+  const swipeBackground = translateX > 50 
+    ? 'bg-green-100' 
+    : translateX < -50 
+      ? 'bg-red-100' 
+      : '';
 
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-center gap-2 mb-3">
+  const transform = isDragging 
+    ? `translateX(${translateX}px)` 
+    : 'translateX(0)';
+
+  return (
+    <>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div
+        {...swipeHandlers}
+        className={`
+          relative group bg-white rounded-lg shadow-lg overflow-hidden
+          transition-all duration-300 ease-in-out hover:shadow-xl
+          transform hover:-translate-y-1
+          min-h-[200px] flex flex-col
+          ${todo.completed ? 'animate-scaleOut' : ''}
+          ${swipeBackground}
+        `}
+        style={{
+          transform,
+          transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+        }}
+      >
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => toggleTodo(todo.id)}
-            className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
+            onClick={() => deleteTodo(todo.id)}
+            className="text-red-500 hover:bg-red-50"
           >
-            {todo.completed ? (
-              <Sparkles className="h-4 w-4 animate-scaleIn" />
-            ) : (
-              <Check className="h-4 w-4 opacity-30" />
-            )}
+            <X className="h-4 w-4" />
           </Button>
-          <h3 className={`text-lg font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-            {todo.title}
-          </h3>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-3">
-          {categories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => handleCategoryToggle(category.id)}
-              className={`
-                px-2 py-0.5 rounded-full text-xs transition-all
-                ${todo.categoryIds.includes(category.id) ? 'opacity-100' : 'opacity-50'}
-                hover:opacity-100
-              `}
-              style={{ backgroundColor: category.color }}
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="flex items-center gap-2 mb-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => toggleTodo(todo.id)}
+              className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
             >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="prose max-w-none flex-1">
-          <RichTextEditor
-            content={todo.content || ''}
-            onChange={(content) => updateTodoContent(todo.id, content)}
-          />
-        </div>
-
-        {todo.reminder && (
-          <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {format(todo.reminder, 'PPp')}
+              {todo.completed ? (
+                <Sparkles className="h-4 w-4 animate-scaleIn" />
+              ) : (
+                <Check className="h-4 w-4 opacity-30" />
+              )}
+            </Button>
+            <h3 className={`text-lg font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+              {todo.title}
+            </h3>
           </div>
-        )}
+
+          <div className="flex flex-wrap gap-1 mb-3">
+            {categories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryToggle(category.id)}
+                className={`
+                  px-2 py-0.5 rounded-full text-xs transition-all
+                  ${todo.categoryIds.includes(category.id) ? 'opacity-100' : 'opacity-50'}
+                  hover:opacity-100
+                `}
+                style={{ backgroundColor: category.color }}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="prose max-w-none flex-1">
+            <RichTextEditor
+              content={todo.content || ''}
+              onChange={(content) => updateTodoContent(todo.id, content)}
+            />
+          </div>
+
+          {todo.reminder && (
+            <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {format(todo.reminder, 'PPp')}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
