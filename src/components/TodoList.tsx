@@ -245,9 +245,8 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
     onSwipedRight: () => toggleTodo(todo.id),
     onSwipedLeft: () => deleteTodo(todo.id),
     trackMouse: true,
-    preventDefaultTouchmoveEvent: true,
     delta: 10,
-    swipeDuration: 500,
+    touchEventOptions: { passive: false }
   });
 
   const handleCategoryToggle = (categoryId: string) => {
