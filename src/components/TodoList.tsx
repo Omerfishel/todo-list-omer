@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
 import type { TodoItem } from '@/contexts/TodoContext';
@@ -38,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { generateImageForTask } from '@/utils/imageGenerator';
 
 export function TodoList() {
   const { todos, categories, addTodo, addCategory } = useTodo();
@@ -258,6 +259,11 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [taskImage, setTaskImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    generateImageForTask(todo.title).then(setTaskImage);
+  }, [todo.title]);
 
   const handleCategoryToggle = (categoryId: string) => {
     const newCategories = todo.categoryIds.includes(categoryId)
@@ -343,7 +349,7 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
           transition: isDragging ? 'none' : 'transform 0.3s ease-out',
         }}
       >
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
           <Button
             variant="ghost"
             size="icon"
@@ -354,24 +360,35 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
           </Button>
         </div>
 
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => toggleTodo(todo.id)}
+            className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
+          >
+            {todo.completed ? (
+              <Sparkles className="h-4 w-4 animate-scaleIn" />
+            ) : (
+              <Check className="h-4 w-4 opacity-30" />
+            )}
+          </Button>
+        </div>
+
         <div className="p-4 flex-1 flex flex-col">
-          <div className="flex items-center gap-2 mb-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => toggleTodo(todo.id)}
-              className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
-            >
-              {todo.completed ? (
-                <Sparkles className="h-4 w-4 animate-scaleIn" />
-              ) : (
-                <Check className="h-4 w-4 opacity-30" />
-              )}
-            </Button>
-            <h3 className={`text-lg font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-              {todo.title}
-            </h3>
-          </div>
+          {taskImage && (
+            <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
+              <img 
+                src={taskImage} 
+                alt={todo.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
+          <h3 className={`text-lg font-medium mb-3 ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+            {todo.title}
+          </h3>
 
           <div className="flex flex-wrap gap-1 mb-3">
             {categories.map(category => (
