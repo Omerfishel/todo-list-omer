@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -51,7 +52,7 @@ export function TodoList() {
         : selectedDate;
       addTodo(newTodoTitle.trim(), selectedCategory, newTodoContent, reminder);
       setNewTodoTitle('');
-      setNewTodoContent('');
+      setNewTodoContent(''); // Clear the rich text editor content
       setSelectedDate(undefined);
       setSelectedTime('');
     }
@@ -245,9 +246,8 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
     onSwipedRight: () => toggleTodo(todo.id),
     onSwipedLeft: () => deleteTodo(todo.id),
     trackMouse: true,
-    preventDefaultTouchmoveEvent: true,
     delta: 10,
-    swipeDuration: 500,
+    touchEventOptions: { passive: false }
   });
 
   const handleCategoryToggle = (categoryId: string) => {
