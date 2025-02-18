@@ -259,6 +259,13 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
+  const handleCategoryToggle = (categoryId: string) => {
+    const newCategories = todo.categoryIds.includes(categoryId)
+      ? todo.categoryIds.filter(id => id !== categoryId)
+      : [...todo.categoryIds, categoryId];
+    updateTodoCategories(todo.id, newCategories);
+  };
+
   const swipeHandlers = useSwipeable({
     onSwiping: (e) => {
       setIsDragging(true);
