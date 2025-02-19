@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Map, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,7 +62,9 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
   };
 
   const updateLocationFromLatLng = (latLng: google.maps.LatLng) => {
-    if (!geocoderRef.current) return;
+    if (!geocoderRef.current) {
+      geocoderRef.current = new google.maps.Geocoder();
+    }
 
     geocoderRef.current.geocode({ location: latLng }, (results, status) => {
       if (status === 'OK' && results?.[0]) {
@@ -87,15 +90,9 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
         await loadGoogleMaps();
       }
 
-      if (!window.google?.maps) {
-        throw new Error('Google Maps not available');
-      }
-
-      cleanupMap();
-
       const defaultLocation = location || tempLocation || { lat: 40.7128, lng: -74.0060 };
       
-      const map = new window.google.maps.Map(mapRef.current, {
+      const map = new google.maps.Map(mapRef.current, {
         center: defaultLocation,
         zoom: 13,
         mapTypeControl: false,
@@ -105,13 +102,13 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
         zoomControl: true,
       });
 
-      const marker = new window.google.maps.Marker({
+      const marker = new google.maps.Marker({
         map,
         position: defaultLocation,
         draggable: true,
       });
 
-      const geocoder = new window.google.maps.Geocoder();
+      const geocoder = new google.maps.Geocoder();
 
       mapInstance.current = map;
       markerRef.current = marker;
@@ -131,11 +128,12 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
       });
 
       if (defaultLocation) {
-        updateLocationFromLatLng(new window.google.maps.LatLng(defaultLocation.lat, defaultLocation.lng));
+        updateLocationFromLatLng(new google.maps.LatLng(defaultLocation.lat, defaultLocation.lng));
       }
 
       setIsLoading(false);
     } catch (error) {
+      console.error('Error initializing map:', error);
       setError(error instanceof Error ? error.message : 'Failed to initialize map');
       setIsLoading(false);
     }
@@ -155,10 +153,7 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
         type="button"
         variant="outline"
         size="icon"
-        onClick={(e) => {
-          e.preventDefault();
-          setIsOpen(true);
-        }}
+        onClick={() => setIsOpen(true)}
         className="relative"
       >
         <Map className="h-4 w-4" />
@@ -167,7 +162,7 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
         )}
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={handleCancel}>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Pick Location</DialogTitle>
@@ -193,10 +188,7 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
                     type="button"
                     variant="outline" 
                     size="sm" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      initMap();
-                    }}
+                    onClick={() => initMap()}
                   >
                     Retry
                   </Button>
@@ -232,10 +224,7 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                onLocationChange(null);
-              }}
+              onClick={() => onLocationChange(null)}
               className="text-red-500 hover:text-red-600"
             >
               Clear
@@ -252,4 +241,4 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
       )}
     </div>
   );
-} 
+}
