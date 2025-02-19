@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 
 export interface Todo {
@@ -34,6 +35,15 @@ export interface Profile {
   updated_at: Date;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  read: boolean;
+  created_at: Date;
+  type: 'TODO_COMPLETED' | 'TODO_ASSIGNED' | 'TODO_UNASSIGNED';
+}
+
 export const todoApi = {
   getAll: async () => {
     try {
@@ -54,7 +64,6 @@ export const todoApi = {
 
       if (!todos) return [];
 
-      // Combine the data
       return todos.map(todo => ({
         ...todo,
         category_ids: todo.todo_categories?.map(tc => tc.category_id) || []
@@ -98,7 +107,6 @@ export const todoApi = {
       throw new Error('No data returned from todo creation');
     }
 
-    // Insert category associations
     if (todo.category_ids?.length > 0) {
       const categoryAssociations = todo.category_ids.map(categoryId => ({
         todo_id: data.id,
@@ -111,7 +119,6 @@ export const todoApi = {
 
       if (categoryError) {
         console.error('Error associating categories:', categoryError);
-        // Rollback todo creation
         await supabase.from('todos').delete().eq('id', data.id);
         throw categoryError;
       }
@@ -147,9 +154,7 @@ export const todoApi = {
       throw new Error('No data returned from todo update');
     }
 
-    // Update category associations
     if (todo.category_ids !== undefined) {
-      // Delete existing associations
       const { error: deleteError } = await supabase
         .from('todo_categories')
         .delete()
@@ -160,7 +165,6 @@ export const todoApi = {
         throw deleteError;
       }
 
-      // Insert new associations
       if (todo.category_ids.length > 0) {
         const categoryAssociations = todo.category_ids.map(categoryId => ({
           todo_id: id,
@@ -189,6 +193,33 @@ export const todoApi = {
       .from('todos')
       .delete()
       .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  assign: async (todoId: string, userId: string) => {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+
+    const { data, error } = await supabase
+      .from('todo_assignments')
+      .insert([{
+        todo_id: todoId,
+        user_id: userId,
+        assigned_by: userData.user.id
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  unassign: async (todoId: string, userId: string) => {
+    const { error } = await supabase
+      .from('todo_assignments')
+      .delete()
+      .match({ todo_id: todoId, user_id: userId });
 
     if (error) throw error;
   }
