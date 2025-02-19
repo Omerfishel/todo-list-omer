@@ -1,132 +1,231 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { todoApi, categoryApi } from '@/services/api';
+import type { Todo, Category } from '@/services/api';
 import { useToast } from "@/hooks/use-toast";
+import { setupDefaultCategories } from '@/lib/setupDefaults';
 
-export type Category = {
-  id: string;
-  name: string;
-  color: string;
-};
-
-export type SubItem = {
-  id: string;
-  title: string;
-  completed: boolean;
-};
-
-export type TodoItem = {
-  id: string;
-  title: string;
-  completed: boolean;
-  categoryIds: string[];
-  reminder?: Date;
+export interface TodoItem extends Todo {
   description?: string;
-  content?: string;
-  subItems: SubItem[];
-};
+  subItems?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
+}
 
-type TodoContextType = {
+interface TodoContextType {
   todos: TodoItem[];
   categories: Category[];
-  addTodo: (title: string, categoryId: string, content: string, reminder?: Date) => void;
-  deleteTodo: (id: string) => void;
-  toggleTodo: (id: string) => void;
-  addCategory: (name: string, color: string) => void;
-  deleteCategory: (id: string) => void;
+  addTodo: (title: string, categoryId: string, content?: string, reminder?: Date, location?: { address: string; lat: number; lng: number; }) => Promise<void>;
+  deleteTodo: (id: string) => Promise<void>;
+  toggleTodo: (id: string) => Promise<void>;
+  updateTodoContent: (id: string, content: string, reminder?: Date, location?: { address: string; lat: number; lng: number; } | null) => Promise<void>;
+  updateTodoCategories: (id: string, categoryIds: string[]) => Promise<void>;
+  addCategory: (name: string, color: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   addSubItem: (todoId: string, title: string) => void;
   deleteSubItem: (todoId: string, subItemId: string) => void;
   toggleSubItem: (todoId: string, subItemId: string) => void;
   updateTodoDescription: (todoId: string, description: string) => void;
-  updateTodoContent: (todoId: string, content: string) => void;
-  updateTodoCategories: (todoId: string, categoryIds: string[]) => void;
-};
+}
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
-export const defaultCategories: Category[] = [
-  { id: '1', name: 'Personal', color: '#E5DEFF' },
-  { id: '2', name: 'Work', color: '#FDE1D3' },
-  { id: '3', name: 'Shopping', color: '#D3E4FD' },
-];
-
 export function TodoProvider({ children }: { children: React.ReactNode }) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
 
-  const addTodo = (title: string, categoryId: string, content: string = '', reminder?: Date) => {
-    const newTodo: TodoItem = {
-      id: Math.random().toString(36).substring(7),
-      title,
-      completed: false,
-      categoryIds: categoryId ? [categoryId] : [],
-      reminder,
-      content,
-      subItems: [],
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await categoryApi.getAll();
+      setCategories(categoriesData);
+      if (categoriesData.length === 0) {
+        // If no categories exist, set up defaults and reload
+        const created = await setupDefaultCategories();
+        if (created) {
+          const newCategories = await categoryApi.getAll();
+          setCategories(newCategories);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [todosData] = await Promise.all([
+          todoApi.getAll(),
+        ]);
+        setTodos(todosData.map(todo => ({ ...todo, subItems: [] })));
+        await loadCategories();
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
     };
-    setTodos([...todos, newTodo]);
-    toast({
-      title: "Todo added",
-      description: "Your todo has been added successfully.",
-    });
-  };
+    loadData();
+  }, []);
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.map(todo => 
-      todo.id === id ? { ...todo, className: 'animate-fadeOut' } : todo
-    ));
-
-    setTimeout(() => {
-      setTodos(todos.filter(todo => todo.id !== id));
-      toast({
-        title: "Todo deleted",
-        description: "Your todo has been deleted successfully.",
+  const addTodo = async (title: string, categoryId: string, content?: string, reminder?: Date, location?: { address: string; lat: number; lng: number; }) => {
+    try {
+      const newTodo = await todoApi.create({
+        title,
+        content,
+        completed: false,
+        category_ids: categoryId ? [categoryId] : [],
+        reminder,
+        location,
+        image_url: null // Initialize with null, will be updated after generation
       });
-    }, 300);
-  };
 
-  const toggleTodo = (id: string) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ));
-    
-    const todo = todos.find(t => t.id === id);
-    if (todo && !todo.completed) {
+      setTodos(prev => [{ ...newTodo, subItems: [] }, ...prev]);
       toast({
-        title: "Task completed! 🎉",
-        description: "Great job! Keep up the good work!",
+        title: "Todo added",
+        description: "Your todo has been added successfully.",
+      });
+    } catch (error) {
+      console.error('Error adding todo:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add todo.",
+        variant: "destructive",
       });
     }
   };
 
-  const addCategory = (name: string, color: string) => {
-    const newCategory: Category = {
-      id: Math.random().toString(36).substring(7),
-      name,
-      color,
-    };
-    setCategories([...categories, newCategory]);
-    toast({
-      title: "Category added",
-      description: "Your category has been added successfully.",
-    });
+  const deleteTodo = async (id: string) => {
+    try {
+      await todoApi.delete(id);
+      setTodos(prev => prev.filter(todo => todo.id !== id));
+      toast({
+        title: "Todo deleted",
+        description: "Your todo has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting todo:', error);
+    }
   };
 
-  const deleteCategory = (id: string) => {
-    setCategories(categories.filter(category => category.id !== id));
-    setTodos(todos.map(todo => ({
-      ...todo,
-      categoryIds: todo.categoryIds.filter(catId => catId !== id)
-    })));
-    toast({
-      title: "Category deleted",
-      description: "Your category has been deleted successfully.",
-    });
+  const toggleTodo = async (id: string) => {
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      const updatedTodo = await todoApi.update(id, {
+        ...todo,
+        completed: !todo.completed
+      });
+
+      setTodos(prev => prev.map(t => 
+        t.id === id ? { ...updatedTodo, subItems: t.subItems } : t
+      ));
+      
+      if (!todo.completed) {
+        toast({
+          title: "Task completed! 🎉",
+          description: "Great job! Keep up the good work!",
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling todo:', error);
+    }
   };
 
-  const updateTodoCategories = (todoId: string, categoryIds: string[]) => {
-    setTodos(todos.map(todo =>
-      todo.id === todoId ? { ...todo, categoryIds } : todo
-    ));
+  const updateTodoContent = async (id: string, content: string, reminder?: Date, location?: { address: string; lat: number; lng: number; } | null) => {
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      const updatedTodo = await todoApi.update(id, {
+        ...todo,
+        content,
+        reminder,
+        location
+      });
+
+      // Update the local state with all the updated fields
+      setTodos(prev => prev.map(t => 
+        t.id === id ? { 
+          ...t,
+          ...updatedTodo,
+          content: updatedTodo.content,
+          reminder: updatedTodo.reminder,
+          location: updatedTodo.location,
+          subItems: t.subItems 
+        } : t
+      ));
+    } catch (error) {
+      console.error('Error updating todo content:', error);
+    }
+  };
+
+  const updateTodoCategories = async (id: string, categoryIds: string[]) => {
+    try {
+      // Optimistically update the UI
+      setTodos(prev => prev.map(t => 
+        t.id === id ? { ...t, category_ids: categoryIds } : t
+      ));
+
+      // Then update the backend
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      await todoApi.update(id, {
+        ...todo,
+        category_ids: categoryIds
+      });
+    } catch (error) {
+      console.error('Error updating todo categories:', error);
+      // Revert the optimistic update on error
+      const originalTodo = todos.find(t => t.id === id);
+      if (originalTodo) {
+        setTodos(prev => prev.map(t => 
+          t.id === id ? originalTodo : t
+        ));
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update categories.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addCategory = async (name: string, color: string) => {
+    try {
+      const newCategory = await categoryApi.create({
+        name,
+        color
+      });
+      setCategories(prev => [...prev, newCategory]);
+      toast({
+        title: "Category added",
+        description: "Your category has been added successfully.",
+      });
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      await categoryApi.delete(id);
+      setCategories(prev => prev.filter(category => category.id !== id));
+      toast({
+        title: "Category deleted",
+        description: "Category has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category.",
+        variant: "destructive",
+      });
+    }
   };
 
   const addSubItem = (todoId: string, title: string) => {
@@ -134,11 +233,14 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       if (todo.id === todoId) {
         return {
           ...todo,
-          subItems: [...todo.subItems, {
-            id: Math.random().toString(36).substring(7),
-            title,
-            completed: false,
-          }],
+          subItems: [
+            ...(todo.subItems || []),
+            {
+              id: Math.random().toString(36).substring(7),
+              title,
+              completed: false,
+            },
+          ],
         };
       }
       return todo;
@@ -150,7 +252,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       if (todo.id === todoId) {
         return {
           ...todo,
-          subItems: todo.subItems.filter(item => item.id !== subItemId),
+          subItems: todo.subItems?.filter(item => item.id !== subItemId) || [],
         };
       }
       return todo;
@@ -162,9 +264,9 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       if (todo.id === todoId) {
         return {
           ...todo,
-          subItems: todo.subItems.map(item =>
+          subItems: todo.subItems?.map(item =>
             item.id === subItemId ? { ...item, completed: !item.completed } : item
-          ),
+          ) || [],
         };
       }
       return todo;
@@ -177,12 +279,6 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     ));
   };
 
-  const updateTodoContent = (todoId: string, content: string) => {
-    setTodos(todos.map(todo =>
-      todo.id === todoId ? { ...todo, content } : todo
-    ));
-  };
-
   return (
     <TodoContext.Provider value={{
       todos,
@@ -190,14 +286,14 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       addTodo,
       deleteTodo,
       toggleTodo,
+      updateTodoContent,
+      updateTodoCategories,
       addCategory,
       deleteCategory,
       addSubItem,
       deleteSubItem,
       toggleSubItem,
       updateTodoDescription,
-      updateTodoContent,
-      updateTodoCategories,
     }}>
       {children}
     </TodoContext.Provider>

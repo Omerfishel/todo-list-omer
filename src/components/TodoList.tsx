@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Check, Calendar, Clock, Search, Sparkles } from 'lucide-react';
+import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
 import type { TodoItem } from '@/contexts/TodoContext';
-import { format } from 'date-fns';
+import { format, addHours, setHours, setMinutes } from 'date-fns';
 import { useSwipeable } from 'react-swipeable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,12 +39,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateImageForTask } from '@/utils/imageGenerator';
+import '../styles/dust-effect.css';
+import { useAuth } from '@/contexts/AuthContext';
+import { X as XIcon } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { MapPicker } from './MapPicker';
 
 export function TodoList() {
-  const { todos, categories, addTodo, addCategory } = useTodo();
+  const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
   const [newTodoTitle, setNewTodoTitle] = useState('');
   const [newTodoContent, setNewTodoContent] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id || '');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
   const [filter, setFilter] = useState('all');
@@ -53,6 +58,8 @@ export function TodoList() {
   const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +67,12 @@ export function TodoList() {
       const reminder = selectedDate && selectedTime
         ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
         : selectedDate;
-      addTodo(newTodoTitle.trim(), selectedCategory, newTodoContent, reminder);
+      addTodo(newTodoTitle.trim(), selectedCategory, newTodoContent, reminder, editLocation);
       setNewTodoTitle('');
-      setNewTodoContent(''); // Clear the rich text editor content
+      setNewTodoContent('');
       setSelectedDate(undefined);
       setSelectedTime('');
+      setEditLocation(null);
       
       // Force reset the editor by temporarily unmounting it
       const editor = document.querySelector('.ProseMirror');
@@ -87,7 +95,7 @@ export function TodoList() {
     const matchesFilter = filter === 'all' || 
       (filter === 'completed' ? todo.completed : !todo.completed);
     const matchesCategory = !categoryFilter || 
-      todo.categoryIds.includes(categoryFilter);
+      (todo.category_ids || []).includes(categoryFilter);
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = !searchQuery || 
       todo.title.toLowerCase().includes(searchLower) ||
@@ -97,7 +105,26 @@ export function TodoList() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn">
+    <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-indigo-600">To Do List</h1>
+          <p className="text-gray-600">Stay organized and productive</p>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
+          className="ml-4"
+        >
+          {viewMode === 'grid' ? (
+            <List className="h-4 w-4" />
+          ) : (
+            <LayoutGrid className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
       <div className="flex gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -173,13 +200,14 @@ export function TodoList() {
               </SelectContent>
             </Select>
 
+            <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="icon">
                   <Calendar className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                 <div className="p-3">
                   <CalendarComponent
                     mode="single"
@@ -188,19 +216,62 @@ export function TodoList() {
                     initialFocus
                   />
                   {selectedDate && (
-                    <div className="mt-3 flex gap-2 items-center">
-                      <Clock className="h-4 w-4" />
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm font-medium">Select Time</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[9, 12, 15, 18].map(hour => {
+                            const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
+                            return (
+                              <Button
+                                key={hour}
+                                variant={selectedTime === timeValue ? 'default' : 'outline'}
+                                className="text-xs py-1"
+                                onClick={() => setSelectedTime(timeValue)}
+                              >
+                                {format(setHours(selectedDate, hour), 'ha')}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2">
                       <Input
                         type="time"
                         value={selectedTime}
                         onChange={(e) => setSelectedTime(e.target.value)}
-                        className="w-32"
-                      />
+                            className="flex-1"
+                          />
+                          {selectedTime && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedTime('')}
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                     </div>
                   )}
                 </div>
               </PopoverContent>
             </Popover>
+              
+              <MapPicker
+                location={editLocation}
+                onLocationChange={setEditLocation}
+              />
+
+              {selectedDate && (
+                <span className="text-sm text-gray-600">
+                  {format(selectedDate, 'MMM d')}
+                  {selectedTime && `, ${format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}`}
+                </span>
+              )}
+            </div>
 
             <Button type="submit" className="ml-auto">
               <Plus className="h-4 w-4 mr-2" />
@@ -210,28 +281,36 @@ export function TodoList() {
         </form>
       </div>
 
-      <div className="flex flex-wrap gap-2 justify-center mb-8">
+      <div className="space-y-6 mb-8">
+        <div className="flex justify-center gap-2 border-b pb-4">
         <Button
           variant={filter === 'all' ? 'default' : 'outline'}
           onClick={() => setFilter('all')}
+            className="w-24"
         >
           All
         </Button>
         <Button
           variant={filter === 'active' ? 'default' : 'outline'}
           onClick={() => setFilter('active')}
+            className="w-24"
         >
           Active
         </Button>
         <Button
           variant={filter === 'completed' ? 'default' : 'outline'}
           onClick={() => setFilter('completed')}
+            className="w-24"
         >
           Completed
         </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 justify-center">
         {categories.map(category => (
+            <div key={category.id} className="flex items-center gap-1">
+              <div className="flex items-center">
           <Button
-            key={category.id}
             variant={categoryFilter === category.id ? 'default' : 'outline'}
             onClick={() => setCategoryFilter(prev => prev === category.id ? '' : category.id)}
             className="flex items-center gap-2"
@@ -241,57 +320,171 @@ export function TodoList() {
               style={{ backgroundColor: category.color }}
             />
             {category.name}
+                  <span className="hidden md:inline-block ml-2 hover:bg-red-100 hover:text-red-500 rounded-full p-1 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteCategory(category.id);
+                    }}
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteCategory(category.id)}
+                  className="md:hidden h-8 w-8 p-0 hover:bg-red-100 hover:text-red-500"
+                >
+                  <XIcon className="h-4 w-4" />
           </Button>
+              </div>
+            </div>
         ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={viewMode === 'grid' 
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        : "space-y-4"
+      }>
         {filteredTodos.map((todo) => (
-          <TodoItemComponent key={todo.id} todo={todo} />
+          <TodoItemComponent 
+            key={todo.id} 
+            todo={todo} 
+            viewMode={viewMode}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function TodoItemComponent({ todo }: { todo: TodoItem }) {
+function TodoItemComponent({ todo, viewMode }: { todo: TodoItem; viewMode: 'grid' | 'list' }) {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [taskImage, setTaskImage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [dustEffect, setDustEffect] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(todo.title);
+  const [editContent, setEditContent] = useState(todo.content || '');
+  const [editReminder, setEditReminder] = useState<Date | undefined>(todo.reminder);
+  const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(todo.location);
+  const { user } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const createDustParticles = () => {
+    const container = document.getElementById(`todo-${todo.id}`);
+    if (!container) return;
+
+    const particleCount = 50;
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'dust-particle';
+      
+      // Random position within the container
+      const x = Math.random() * container.offsetWidth;
+      const y = Math.random() * container.offsetHeight;
+      
+      // Random direction for particle movement, but biased towards left
+      const angle = Math.random() * Math.PI - Math.PI / 4; // -45 to 135 degrees
+      const distance = 50 + Math.random() * 100;
+      const tx = Math.cos(angle) * distance;
+      const ty = Math.sin(angle) * distance;
+
+      particle.style.setProperty('--tx', `${tx}px`);
+      particle.style.setProperty('--ty', `${ty}px`);
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      
+      container.appendChild(particle);
+    }
+  };
+
+  const handleDeleteWithEffect = () => {
+    setIsDeleting(true);
+    setDustEffect(true);
+    createDustParticles();
+    
+    setTimeout(() => {
+      deleteTodo(todo.id);
+    }, 800);
+  };
+
+  const handleComplete = () => {
+    toggleTodo(todo.id);
+    const element = document.getElementById(`todo-${todo.id}`);
+    if (element) {
+      element.classList.add('completion-effect');
+      setTimeout(() => {
+        element.classList.remove('completion-effect');
+      }, 800);
+    }
+  };
 
   useEffect(() => {
-    generateImageForTask(todo.title).then(setTaskImage);
-  }, [todo.title]);
+    let isMounted = true;
+
+    const loadImage = async () => {
+      try {
+        if (!taskImage && !imageError) {
+          setImageError(false);
+          const imageUrl = await generateImageForTask(todo.title, todo.id);
+          if (isMounted && imageUrl) {
+            setTaskImage(imageUrl);
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error loading image:', error);
+          setImageError(true);
+          setTaskImage(null);
+        }
+      }
+    };
+
+    loadImage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [todo.title, todo.id]);
 
   const handleCategoryToggle = (categoryId: string) => {
-    const newCategories = todo.categoryIds.includes(categoryId)
-      ? todo.categoryIds.filter(id => id !== categoryId)
-      : [...todo.categoryIds, categoryId];
+    const currentCategories = todo.category_ids || [];
+    const newCategories = currentCategories.includes(categoryId)
+      ? currentCategories.filter(id => id !== categoryId)
+      : [...currentCategories, categoryId];
     updateTodoCategories(todo.id, newCategories);
   };
 
   const swipeHandlers = useSwipeable({
     onSwiping: (e) => {
+      if (isDeleting) return;
       setIsDragging(true);
       setTranslateX(e.deltaX);
     },
     onSwipedLeft: () => {
+      if (isDeleting) return;
       if (translateX < -100) {
-        setDeleteDialogOpen(true);
+        handleDeleteWithEffect();
       }
       setTranslateX(0);
       setIsDragging(false);
     },
     onSwipedRight: () => {
+      if (isDeleting) return;
       if (translateX > 100) {
-        toggleTodo(todo.id);
+        handleComplete();
       }
       setTranslateX(0);
       setIsDragging(false);
     },
     onTouchEndOrOnMouseUp: () => {
+      if (isDeleting) return;
       setTranslateX(0);
       setIsDragging(false);
     },
@@ -300,16 +493,53 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
     touchEventOptions: { passive: false }
   });
 
-  const handleDelete = () => {
-    deleteTodo(todo.id);
-    setDeleteDialogOpen(false);
+  const getSwipeBackground = (translateX: number) => {
+    if (translateX > 0) {
+      // Green gradient for right swipe
+      const opacity = Math.min(Math.abs(translateX) / 200, 0.5);
+      return `linear-gradient(to right, white, rgba(34, 197, 94, ${opacity}))`;
+    } else if (translateX < 0) {
+      // Red gradient for left swipe
+      const opacity = Math.min(Math.abs(translateX) / 200, 0.5);
+      return `linear-gradient(to left, white, rgba(239, 68, 68, ${opacity}))`;
+    }
+    return 'white';
   };
 
-  const swipeBackground = translateX > 50 
-    ? 'bg-green-100' 
-    : translateX < -50 
-      ? 'bg-red-100' 
-      : '';
+  const renderCategories = (showAll: boolean = false) => (
+    <div className="flex flex-wrap gap-1">
+      {categories
+        .filter(cat => showAll || todo.category_ids?.includes(cat.id))
+        .map(category => (
+          <button
+            key={category.id}
+            onClick={() => handleCategoryToggle(category.id)}
+            className={`
+              px-2 py-0.5 rounded-full text-xs transition-all
+              ${todo.category_ids?.includes(category.id) ? 'opacity-100' : 'opacity-50'}
+              hover:opacity-100
+            `}
+            style={{ backgroundColor: category.color }}
+          >
+            {category.name}
+          </button>
+        ))}
+    </div>
+  );
+
+  const handleSave = () => {
+    updateTodoContent(todo.id, editContent, editReminder, editLocation);
+    updateTodoCategories(todo.id, todo.category_ids || []);
+    setIsEditing(false);
+  };
+
+  const handleDiscard = () => {
+    setEditTitle(todo.title);
+    setEditContent(todo.content || '');
+    setEditReminder(todo.reminder);
+    setEditLocation(todo.location);
+    setIsEditing(false);
+  };
 
   return (
     <>
@@ -323,7 +553,7 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction onClick={handleDeleteWithEffect} className="bg-red-500 hover:bg-red-600">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -331,32 +561,244 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
       </AlertDialog>
 
       <div
-        {...swipeHandlers}
+        id={`todo-${todo.id}`}
+        {...(!isEditing ? swipeHandlers : {})}
         className={`
-          relative group bg-white rounded-lg shadow-lg overflow-hidden
+          dust-container
+          relative group rounded-lg shadow-lg overflow-hidden
           transition-all duration-300 ease-in-out hover:shadow-xl
-          transform hover:-translate-y-1
-          min-h-[200px] flex flex-col
+          ${viewMode === 'grid' ? 'min-h-[200px] flex flex-col' : 'flex items-center p-4'}
           ${todo.completed ? 'animate-scaleOut' : ''}
-          ${swipeBackground}
+          ${dustEffect ? 'dust-effect' : ''}
+          ${isEditing ? 'ring-2 ring-blue-500' : ''}
         `}
         style={{
-          transform,
+          transform: `translateX(${translateX}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+          background: getSwipeBackground(translateX),
         }}
       >
-        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        {viewMode === 'grid' ? (
+          <>
+            <div className="absolute top-0 left-0 right-0 p-2 flex justify-between items-center bg-gradient-to-b from-white/80 to-transparent z-10">
+              {!isEditing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="text-red-500 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => deleteTodo(todo.id)}
+                      onClick={handleDiscard}
             className="text-red-500 hover:bg-red-50"
           >
             <X className="h-4 w-4" />
           </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleSave}
+                      className="text-green-500 hover:bg-green-50"
+                    >
+                      <Save className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsEditing(true)}
+                      className="text-blue-500 hover:bg-blue-50"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleTodo(todo.id)}
+                      className={`shrink-0 ${todo.completed ? 'text-green-500' : ''}`}
+                    >
+                      {todo.completed ? (
+                        <Sparkles className="h-4 w-4 animate-scaleIn" />
+                      ) : (
+                        <Check className="h-4 w-4 opacity-30" />
+                      )}
+                    </Button>
+                  </>
+                )}
+              </div>
         </div>
 
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <div className="p-4 pt-12 flex-1 flex flex-col">
+              {!imageError && taskImage && (
+                <div className="w-full h-48 mb-4 rounded-lg overflow-hidden bg-gray-100 relative">
+                  <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-100 to-gray-200" />
+                  <img 
+                    src={taskImage} 
+                    alt={todo.title}
+                    className="w-full h-full object-cover absolute inset-0 transition-opacity duration-300"
+                    onError={() => setImageError(true)}
+                    onLoad={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.style.opacity = '1';
+                    }}
+                    style={{ opacity: '0' }}
+                    loading="lazy"
+                  />
+                </div>
+              )}
+
+              {isEditing ? (
+                <>
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="text-lg font-medium mb-3"
+                  />
+                  <div className="mb-3">
+                    {renderCategories(true)}
+                  </div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {editReminder ? format(editReminder, 'MMM d, h:mm a') : 'Add reminder'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editReminder}
+                            onSelect={(date) => {
+                              if (date) {
+                                const time = editReminder ? format(editReminder, 'HH:mm') : '09:00';
+                                const newDate = new Date(`${format(date, 'yyyy-MM-dd')}T${time}`);
+                                setEditReminder(newDate);
+                              } else {
+                                setEditReminder(undefined);
+                              }
+                            }}
+                            initialFocus
+                          />
+                          {editReminder && (
+                            <div className="mt-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <span className="text-sm font-medium">Select Time</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                {[9, 12, 15, 18].map(hour => {
+                                  const timeValue = format(setHours(editReminder, hour), 'HH:mm');
+                                  const currentTime = editReminder ? format(editReminder, 'HH:mm') : '';
+                                  return (
+                                    <Button
+                                      key={hour}
+                                      variant={currentTime === timeValue ? 'default' : 'outline'}
+                                      className="text-xs py-1"
+                                      onClick={() => {
+                                        const newDate = setHours(editReminder, hour);
+                                        setEditReminder(newDate);
+                                      }}
+                                    >
+                                      {format(setHours(new Date(), hour), 'ha')}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="time"
+                                  value={editReminder ? format(editReminder, 'HH:mm') : ''}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      const [hours, minutes] = e.target.value.split(':').map(Number);
+                                      const newDate = setHours(setMinutes(editReminder, minutes), hours);
+                                      setEditReminder(newDate);
+                                    }
+                                  }}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditReminder(undefined)}
+                                  className="text-red-500 hover:text-red-600"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    {editReminder && (
+                      <span className="text-sm text-gray-600">
+                        {format(editReminder, 'MMM d, h:mm a')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="prose max-w-none flex-1">
+                    <RichTextEditor
+                      content={editContent}
+                      onChange={setEditContent}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className={`text-lg font-medium mb-3 ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+                    {todo.title}
+                  </h3>
+                  <div className="mb-3">
+                    {renderCategories(false)}
+                  </div>
+                  <div className="prose max-w-none flex-1">
+                    <div dangerouslySetInnerHTML={{ __html: todo.content || '' }} />
+                  </div>
+                </>
+              )}
+
+              {todo.reminder && !isEditing && (
+                <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {format(todo.reminder, 'PPp')}
+                </div>
+              )}
+
+              {todo.location && !isEditing && (
+                <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {todo.location.address}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-2">
+                {!isMobile && !isEditing && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="text-red-500 hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100 md:transition-opacity"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
           <Button
             variant="ghost"
             size="icon"
@@ -371,52 +813,173 @@ function TodoItemComponent({ todo }: { todo: TodoItem }) {
           </Button>
         </div>
 
-        <div className="p-4 flex-1 flex flex-col">
-          {taskImage && (
-            <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
-              <img 
-                src={taskImage} 
-                alt={todo.title}
-                className="w-full h-full object-cover"
-              />
+              <div className="flex-1 min-w-0">
+                {isEditing ? (
+                  <>
+                    <Input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="text-lg font-medium mb-3"
+                    />
+                    <div className="mb-3">
+                      {renderCategories(true)}
+                    </div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            {editReminder ? format(editReminder, 'MMM d, h:mm a') : 'Add reminder'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <div className="p-3">
+                            <CalendarComponent
+                              mode="single"
+                              selected={editReminder}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const time = editReminder ? format(editReminder, 'HH:mm') : '09:00';
+                                  const newDate = new Date(`${format(date, 'yyyy-MM-dd')}T${time}`);
+                                  setEditReminder(newDate);
+                                } else {
+                                  setEditReminder(undefined);
+                                }
+                              }}
+                              initialFocus
+                            />
+                            {editReminder && (
+                              <div className="mt-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-gray-500" />
+                                  <span className="text-sm font-medium">Select Time</span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {[9, 12, 15, 18].map(hour => {
+                                    const timeValue = format(setHours(editReminder, hour), 'HH:mm');
+                                    const currentTime = editReminder ? format(editReminder, 'HH:mm') : '';
+                                    return (
+                                      <Button
+                                        key={hour}
+                                        variant={currentTime === timeValue ? 'default' : 'outline'}
+                                        className="text-xs py-1"
+                                        onClick={() => {
+                                          const newDate = setHours(editReminder, hour);
+                                          setEditReminder(newDate);
+                                        }}
+                                      >
+                                        {format(setHours(new Date(), hour), 'ha')}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="time"
+                                    value={editReminder ? format(editReminder, 'HH:mm') : ''}
+                                    onChange={(e) => {
+                                      if (e.target.value) {
+                                        const [hours, minutes] = e.target.value.split(':').map(Number);
+                                        const newDate = setHours(setMinutes(editReminder, minutes), hours);
+                                        setEditReminder(newDate);
+                                      }
+                                    }}
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditReminder(undefined)}
+                                    className="text-red-500 hover:text-red-600"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
             </div>
           )}
-
-          <h3 className={`text-lg font-medium mb-3 ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="prose max-w-none">
+                      <RichTextEditor
+                        content={editContent}
+                        onChange={setEditContent}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className={`text-lg font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
             {todo.title}
           </h3>
-
-          <div className="flex flex-wrap gap-1 mb-3">
-            {categories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryToggle(category.id)}
-                className={`
-                  px-2 py-0.5 rounded-full text-xs transition-all
-                  ${todo.categoryIds.includes(category.id) ? 'opacity-100' : 'opacity-50'}
-                  hover:opacity-100
-                `}
-                style={{ backgroundColor: category.color }}
-              >
-                {category.name}
-              </button>
-            ))}
+                    {todo.content && (
+                      <div className="mt-1 text-sm text-gray-600 line-clamp-2"
+                        dangerouslySetInnerHTML={{ __html: todo.content }}
+                      />
+                    )}
+                    {todo.category_ids?.length > 0 && (
+                      <div className="mt-2">
+                        {renderCategories(false)}
+          </div>
+                    )}
+                  </>
+                )}
           </div>
 
-          <div className="prose max-w-none flex-1">
-            <RichTextEditor
-              content={todo.content || ''}
-              onChange={(content) => updateTodoContent(todo.id, content)}
-            />
-          </div>
-
-          {todo.reminder && (
-            <div className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+              {todo.reminder && !isEditing && (
+                <div className="text-xs text-gray-500 flex items-center gap-1 ml-auto mr-4">
               <Clock className="h-3 w-3" />
               {format(todo.reminder, 'PPp')}
             </div>
           )}
+
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDiscard}
+                      className="text-red-500 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleSave}
+                      className="text-green-500 hover:bg-green-50"
+                    >
+                      <Save className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsEditing(true)}
+                      className="text-blue-500 hover:bg-blue-50"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    {isMobile && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteDialogOpen(true)}
+                        className="text-red-500 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
         </div>
+          </>
+        )}
       </div>
     </>
   );

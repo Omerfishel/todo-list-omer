@@ -1,27 +1,61 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { TodoList } from '@/components/TodoList';
+import { TodoProvider } from '@/contexts/TodoContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { SignIn } from '@/pages/auth/SignIn';
+import { SignUp } from '@/pages/auth/SignUp';
+import { Toaster } from '@/components/ui/toaster';
+import { setupDefaultCategories } from '@/lib/setupDefaults';
 
-const queryClient = new QueryClient();
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/auth/signin" />;
+  }
+
+  return <>{children}</>;
+}
+
+function AuthenticatedApp() {
+  useEffect(() => {
+    setupDefaultCategories();
+  }, []);
+
+  return (
+    <TodoProvider>
+      <div className="min-h-screen bg-gray-50">
+        <TodoList />
+      </div>
+    </TodoProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/auth/signin" element={<SignIn />} />
+          <Route path="/auth/signup" element={<SignUp />} />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <AuthenticatedApp />
+              </PrivateRoute>
+            }
+          />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        <Toaster />
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;
