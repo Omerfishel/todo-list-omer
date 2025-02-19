@@ -1,3 +1,4 @@
+
 let isLoaded = false;
 
 // Verify if the API key is available
@@ -15,23 +16,29 @@ export function loadGoogleMaps(): Promise<void> {
 
   return new Promise((resolve, reject) => {
     try {
+      // Check if script already exists
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
 
-      script.onload = () => {
+      script.addEventListener('load', () => {
         if (window.google?.maps) {
           isLoaded = true;
           resolve();
         } else {
           reject(new Error('Google Maps not available after script load'));
         }
-      };
+      });
 
-      script.onerror = () => {
+      script.addEventListener('error', () => {
         reject(new Error('Failed to load Google Maps script'));
-      };
+      });
 
       document.head.appendChild(script);
     } catch (error) {
@@ -42,4 +49,4 @@ export function loadGoogleMaps(): Promise<void> {
 
 export function isGoogleMapsLoaded(): boolean {
   return isLoaded && !!window.google?.maps;
-} 
+}
