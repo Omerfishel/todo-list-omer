@@ -45,6 +45,13 @@ import { X as XIcon } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { MapPicker } from './MapPicker';
 
+type SortOption = 'modified' | 'reminder' | 'urgency' | 'created';
+type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
+
+interface TodoItemExtended extends TodoItem {
+  urgency?: UrgencyLevel;
+}
+
 export function TodoList() {
   const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -60,6 +67,7 @@ export function TodoList() {
   const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('modified');
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +99,26 @@ export function TodoList() {
     }
   };
 
-  const filteredTodos = todos.filter(todo => {
+  const sortTodos = (todos: TodoItemExtended[]) => {
+    return [...todos].sort((a, b) => {
+      switch (sortBy) {
+        case 'reminder':
+          if (!a.reminder) return 1;
+          if (!b.reminder) return -1;
+          return new Date(b.reminder).getTime() - new Date(a.reminder).getTime();
+        case 'urgency':
+          const urgencyOrder = { urgent: 3, high: 2, medium: 1, low: 0 };
+          return (urgencyOrder[b.urgency || 'low'] || 0) - (urgencyOrder[a.urgency || 'low'] || 0);
+        case 'created':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'modified':
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    });
+  };
+
+  const filteredTodos = sortTodos(todos.filter(todo => {
     const matchesFilter = filter === 'all' || 
       (filter === 'completed' ? todo.completed : !todo.completed);
     const matchesCategory = !categoryFilter || 
@@ -102,7 +129,7 @@ export function TodoList() {
       (todo.content || '').toLowerCase().includes(searchLower) ||
       (todo.description || '').toLowerCase().includes(searchLower);
     return matchesFilter && matchesCategory && matchesSearch;
-  });
+  }));
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
@@ -359,7 +386,7 @@ export function TodoList() {
   );
 }
 
-function TodoItemComponent({ todo, viewMode }: { todo: TodoItem; viewMode: 'grid' | 'list' }) {
+function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMode: 'grid' | 'list' }) {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
@@ -528,7 +555,13 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItem; viewMode: 'grid
   );
 
   const handleSave = () => {
-    updateTodoContent(todo.id, editContent, editReminder, editLocation);
+    updateTodoContent(
+      todo.id,
+      editContent,
+      editReminder,
+      editLocation,
+      editTitle
+    );
     updateTodoCategories(todo.id, todo.category_ids || []);
     setIsEditing(false);
   };
@@ -540,6 +573,22 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItem; viewMode: 'grid
     setEditLocation(todo.location);
     setIsEditing(false);
   };
+
+  const getUrgencyColor = (level: UrgencyLevel = 'low') => {
+    switch (level) {
+      case 'urgent': return 'bg-red-100 text-red-700';
+      case 'high': return 'bg-orange-100 text-orange-700';
+      case 'medium': return 'bg-yellow-100 text-yellow-700';
+      case 'low': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const renderUrgencyBadge = () => (
+    <div className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(todo.urgency)}`}>
+      {todo.urgency || 'low'}
+    </div>
+  );
 
   return (
     <>

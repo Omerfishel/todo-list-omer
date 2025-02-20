@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 
 export interface Todo {
@@ -13,6 +12,7 @@ export interface Todo {
     lat: number;
     lng: number;
   };
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
   category_ids: string[];
   creator_id: string;
   created_at: Date;
@@ -137,6 +137,8 @@ export const todoApi = {
     if (todo.completed !== undefined) updates.completed = todo.completed;
     if (todo.image_url !== undefined) updates.image_url = todo.image_url;
     if (todo.reminder !== undefined) updates.reminder = todo.reminder;
+    if (todo.location !== undefined) updates.location = todo.location;
+    if (todo.urgency !== undefined) updates.urgency = todo.urgency;
 
     const { data, error } = await supabase
       .from('todos')
@@ -313,4 +315,4 @@ export const profileApi = {
 
     if (error) throw error;
   }
-}; 
+};

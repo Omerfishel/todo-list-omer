@@ -6,6 +6,7 @@ import { setupDefaultCategories } from '@/lib/setupDefaults';
 
 export interface TodoItem extends Todo {
   description?: string;
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
   subItems?: Array<{
     id: string;
     title: string;
@@ -19,7 +20,13 @@ interface TodoContextType {
   addTodo: (title: string, categoryId: string, content?: string, reminder?: Date, location?: { address: string; lat: number; lng: number; }) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
-  updateTodoContent: (id: string, content: string, reminder?: Date, location?: { address: string; lat: number; lng: number; } | null) => Promise<void>;
+  updateTodoContent: (
+    id: string, 
+    content: string, 
+    reminder?: Date, 
+    location?: { address: string; lat: number; lng: number; } | null,
+    title?: string
+  ) => Promise<void>;
   updateTodoCategories: (id: string, categoryIds: string[]) => Promise<void>;
   addCategory: (name: string, color: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
@@ -41,7 +48,6 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       const categoriesData = await categoryApi.getAll();
       setCategories(categoriesData);
       if (categoriesData.length === 0) {
-        // If no categories exist, set up defaults and reload
         const created = await setupDefaultCategories();
         if (created) {
           const newCategories = await categoryApi.getAll();
@@ -53,7 +59,6 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -78,7 +83,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
         category_ids: categoryId ? [categoryId] : [],
         reminder,
         location,
-        image_url: null // Initialize with null, will be updated after generation
+        image_url: null
       });
 
       setTodos(prev => [{ ...newTodo, subItems: [] }, ...prev]);
@@ -134,42 +139,57 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateTodoContent = async (id: string, content: string, reminder?: Date, location?: { address: string; lat: number; lng: number; } | null) => {
+  const updateTodoContent = async (
+    id: string, 
+    content: string, 
+    reminder?: Date, 
+    location?: { address: string; lat: number; lng: number; } | null,
+    title?: string
+  ) => {
     try {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
 
       const updatedTodo = await todoApi.update(id, {
         ...todo,
+        title: title || todo.title,
         content,
         reminder,
         location
       });
 
-      // Update the local state with all the updated fields
       setTodos(prev => prev.map(t => 
         t.id === id ? { 
           ...t,
           ...updatedTodo,
+          title: updatedTodo.title,
           content: updatedTodo.content,
           reminder: updatedTodo.reminder,
           location: updatedTodo.location,
           subItems: t.subItems 
         } : t
       ));
+
+      toast({
+        title: "Task updated",
+        description: "Your task has been updated successfully.",
+      });
     } catch (error) {
       console.error('Error updating todo content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task.",
+        variant: "destructive",
+      });
     }
   };
 
   const updateTodoCategories = async (id: string, categoryIds: string[]) => {
     try {
-      // Optimistically update the UI
       setTodos(prev => prev.map(t => 
         t.id === id ? { ...t, category_ids: categoryIds } : t
       ));
 
-      // Then update the backend
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
 
@@ -179,7 +199,6 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Error updating todo categories:', error);
-      // Revert the optimistic update on error
       const originalTodo = todos.find(t => t.id === id);
       if (originalTodo) {
         setTodos(prev => prev.map(t => 
