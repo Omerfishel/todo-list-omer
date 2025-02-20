@@ -1,244 +1,155 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Map, MapPin, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { MapPin } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { loadGoogleMaps, isGoogleMapsLoaded } from '@/lib/maps';
 
-interface Location {
-  address: string;
-  lat: number;
-  lng: number;
-}
-
 interface MapPickerProps {
-  location?: Location | null;
-  onLocationChange: (location: Location | null) => void;
+  location: { address: string; lat: number; lng: number; } | null;
+  onLocationChange: (location: { address: string; lat: number; lng: number; } | null) => void;
 }
 
 export function MapPicker({ location, onLocationChange }: MapPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [tempLocation, setTempLocation] = useState<Location | null>(null);
-  
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
-  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-
-  const cleanupMap = () => {
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-      markerRef.current = null;
-    }
-    if (mapInstance.current) {
-      mapInstance.current = null;
-    }
-    if (geocoderRef.current) {
-      geocoderRef.current = null;
-    }
-    if (mapRef.current) {
-      mapRef.current.innerHTML = '';
-    }
-  };
-
-  const handleConfirm = () => {
-    if (tempLocation) {
-      onLocationChange(tempLocation);
-    }
-    setIsOpen(false);
-  };
-
-  const handleCancel = () => {
-    setTempLocation(location);
-    setIsOpen(false);
-  };
-
-  const updateLocationFromLatLng = (latLng: google.maps.LatLng) => {
-    if (!geocoderRef.current) {
-      geocoderRef.current = new google.maps.Geocoder();
-    }
-
-    geocoderRef.current.geocode({ location: latLng }, (results, status) => {
-      if (status === 'OK' && results?.[0]) {
-        setTempLocation({
-          address: results[0].formatted_address,
-          lat: latLng.lat(),
-          lng: latLng.lng(),
-        });
-      } else {
-        setError('Failed to get address for selected location');
-      }
-    });
-  };
-
-  const initMap = async () => {
-    if (!mapRef.current) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      if (!isGoogleMapsLoaded()) {
-        await loadGoogleMaps();
-      }
-
-      const defaultLocation = location || tempLocation || { lat: 40.7128, lng: -74.0060 };
-      
-      const map = new google.maps.Map(mapRef.current, {
-        center: defaultLocation,
-        zoom: 13,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        gestureHandling: 'greedy',
-        zoomControl: true,
-      });
-
-      const marker = new google.maps.Marker({
-        map,
-        position: defaultLocation,
-        draggable: true,
-      });
-
-      const geocoder = new google.maps.Geocoder();
-
-      mapInstance.current = map;
-      markerRef.current = marker;
-      geocoderRef.current = geocoder;
-
-      map.addListener('click', (e: google.maps.MapMouseEvent) => {
-        if (!e.latLng) return;
-        marker.setPosition(e.latLng);
-        updateLocationFromLatLng(e.latLng);
-      });
-
-      marker.addListener('dragend', () => {
-        const position = marker.getPosition();
-        if (position) {
-          updateLocationFromLatLng(position);
-        }
-      });
-
-      if (defaultLocation) {
-        updateLocationFromLatLng(new google.maps.LatLng(defaultLocation.lat, defaultLocation.lng));
-      }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error initializing map:', error);
-      setError(error instanceof Error ? error.message : 'Failed to initialize map');
-      setIsLoading(false);
-    }
-  };
+  const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
+  const [searchInput, setSearchInput] = useState<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (isOpen && mapRef.current) {
-      setTempLocation(location);
-      initMap();
-    }
-    return cleanupMap;
-  }, [isOpen, location]);
+    if (!isOpen) return;
+
+    const initMap = async () => {
+      try {
+        if (!isGoogleMapsLoaded()) {
+          await loadGoogleMaps();
+        }
+
+        if (!mapContainer) return;
+
+        const mapInstance = new google.maps.Map(mapContainer, {
+          center: location ? 
+            { lat: location.lat, lng: location.lng } : 
+            { lat: 0, lng: 0 },
+          zoom: location ? 15 : 2,
+        });
+
+        setMap(mapInstance);
+
+        if (location) {
+          const markerInstance = new google.maps.Marker({
+            position: { lat: location.lat, lng: location.lng },
+            map: mapInstance,
+            draggable: true,
+          });
+
+          markerInstance.addListener('dragend', async () => {
+            const position = markerInstance.getPosition();
+            if (position) {
+              const geocoder = new google.maps.Geocoder();
+              const result = await geocoder.geocode({ location: position });
+              if (result.results[0]) {
+                onLocationChange({
+                  address: result.results[0].formatted_address,
+                  lat: position.lat(),
+                  lng: position.lng(),
+                });
+              }
+            }
+          });
+
+          setMarker(markerInstance);
+        }
+
+        if (searchInput) {
+          const searchBoxInstance = new google.maps.places.SearchBox(searchInput);
+          mapInstance.controls[google.maps.ControlPosition.TOP_CENTER].push(searchInput);
+
+          searchBoxInstance.addListener('places_changed', () => {
+            const places = searchBoxInstance.getPlaces();
+            if (!places || places.length === 0) return;
+
+            const place = places[0];
+            if (!place.geometry || !place.geometry.location) return;
+
+            mapInstance.setCenter(place.geometry.location);
+            mapInstance.setZoom(15);
+
+            if (marker) {
+              marker.setMap(null);
+            }
+
+            const newMarker = new google.maps.Marker({
+              map: mapInstance,
+              position: place.geometry.location,
+              draggable: true,
+            });
+
+            newMarker.addListener('dragend', async () => {
+              const position = newMarker.getPosition();
+              if (position) {
+                const geocoder = new google.maps.Geocoder();
+                const result = await geocoder.geocode({ location: position });
+                if (result.results[0]) {
+                  onLocationChange({
+                    address: result.results[0].formatted_address,
+                    lat: position.lat(),
+                    lng: position.lng(),
+                  });
+                }
+              }
+            });
+
+            setMarker(newMarker);
+            onLocationChange({
+              address: place.formatted_address || '',
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            });
+          });
+
+          setSearchBox(searchBoxInstance);
+        }
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    };
+
+    initMap();
+  }, [isOpen, mapContainer, searchInput, location]);
 
   return (
-    <div className="space-y-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={() => setIsOpen(true)}
-        className="relative"
-      >
-        <Map className="h-4 w-4" />
-        {location && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
-        )}
-      </Button>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Pick Location</DialogTitle>
-          </DialogHeader>
-          <div className="relative mt-4">
-            <div
-              ref={mapRef}
-              className="w-full h-[400px] rounded-lg overflow-hidden bg-gray-100"
-            />
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/90">
-                <div className="text-center space-y-2">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                  <p className="text-sm font-medium text-gray-600">Loading map...</p>
-                </div>
-              </div>
-            )}
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
-                <div className="text-center p-4">
-                  <p className="text-red-500 mb-2">{error}</p>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => initMap()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-          {tempLocation && (
-            <div className="flex items-center gap-2 mt-4 text-sm text-gray-600">
-              <MapPin className="h-4 w-4 shrink-0" />
-              <span className="truncate">{tempLocation.address}</span>
-            </div>
-          )}
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleConfirm} disabled={!tempLocation}>
-              Confirm Location
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {location && (
-        <div className="p-2 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="h-4 w-4 shrink-0" />
-              <span className="truncate">{location.address}</span>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onLocationChange(null)}
-              className="text-red-500 hover:text-red-600"
-            >
-              Clear
-            </Button>
-          </div>
-          <div className="w-full h-[100px] rounded-md overflow-hidden">
-            <img
-              src={`https://maps.googleapis.com/maps/api/staticmap?center=${location.lat},${location.lng}&zoom=14&size=400x100&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&markers=${location.lat},${location.lng}`}
-              alt="Location map"
-              className="w-full h-full object-cover"
-            />
-          </div>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon">
+          <MapPin className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Select Location</DialogTitle>
+        </DialogHeader>
+        <div className="mt-4 space-y-4">
+          <input
+            ref={setSearchInput}
+            type="text"
+            placeholder="Search for a location"
+            className="w-full px-4 py-2 border rounded-md"
+          />
+          <div
+            ref={setMapContainer}
+            className="w-full h-[400px] rounded-lg overflow-hidden"
+          />
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -72,6 +71,36 @@ export function TodoList() {
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
 
+  const renderSortSelector = () => (
+    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Sort by" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="modified">Last Modified</SelectItem>
+        <SelectItem value="created">Creation Date</SelectItem>
+        <SelectItem value="reminder">Reminder Date</SelectItem>
+        <SelectItem value="urgency">Urgency</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const getViewIcon = () => {
+    switch (view) {
+      case 'grid':
+        return <LayoutGrid className="h-4 w-4" />;
+      case 'list':
+        return <List className="h-4 w-4" />;
+      case 'calendar':
+        return <Calendar className="h-4 w-4" />;
+    }
+  };
+
+  const generateRandomPastelColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 90%)`;
+  };
+
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodoTitle.trim()) {
@@ -95,7 +124,8 @@ export function TodoList() {
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
-      addCategory(newCategoryName.trim(), newCategoryColor);
+      const color = newCategoryColor === '#E5DEFF' ? generateRandomPastelColor() : newCategoryColor;
+      addCategory(newCategoryName.trim(), color);
       setNewCategoryName('');
       setNewCategoryColor('#E5DEFF');
       setIsNewCategoryDialogOpen(false);
@@ -162,13 +192,7 @@ export function TodoList() {
             )}
             className="ml-4"
           >
-            {view === 'calendar' ? (
-              <LayoutGrid className="h-4 w-4" />
-            ) : view === 'grid' ? (
-              <List className="h-4 w-4" />
-            ) : (
-              <Calendar className="h-4 w-4" />
-            )}
+            {getViewIcon()}
           </Button>
           <Button
             variant="outline"
@@ -192,6 +216,7 @@ export function TodoList() {
             className="pl-10"
           />
         </div>
+        {renderSortSelector()}
         <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline">Add Category</Button>
@@ -400,7 +425,7 @@ export function TodoList() {
       </div>
 
       {view === 'calendar' ? (
-        <CalendarView />
+        <CalendarView sortBy={sortBy} />
       ) : (
         <div className={view === 'grid' 
           ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
