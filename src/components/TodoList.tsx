@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin } from 'lucide-react';
+import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
 import type { TodoItem } from '@/contexts/TodoContext';
 import { format, addHours, setHours, setMinutes } from 'date-fns';
@@ -55,6 +56,7 @@ interface TodoItemExtended extends TodoItem {
 
 export function TodoList() {
   const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
+  const { signOut } = useAuth();
   const [newTodoTitle, setNewTodoTitle] = useState('');
   const [newTodoContent, setNewTodoContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -119,7 +121,7 @@ export function TodoList() {
     });
   };
 
-  const filteredTodos = sortTodos(todos.filter(todo => {
+  const filteredTodos = todos.filter(todo => {
     const matchesFilter = filter === 'all' || 
       (filter === 'completed' ? todo.completed : !todo.completed);
     const matchesCategory = !categoryFilter || 
@@ -130,7 +132,9 @@ export function TodoList() {
       (todo.content || '').toLowerCase().includes(searchLower) ||
       (todo.description || '').toLowerCase().includes(searchLower);
     return matchesFilter && matchesCategory && matchesSearch;
-  }));
+  });
+
+  const sortedAndFilteredTodos = sortTodos(filteredTodos);
 
   const handleLogout = async () => {
     try {
@@ -163,7 +167,7 @@ export function TodoList() {
             ) : view === 'grid' ? (
               <List className="h-4 w-4" />
             ) : (
-              <CalendarIcon className="h-4 w-4" />
+              <Calendar className="h-4 w-4" />
             )}
           </Button>
           <Button
