@@ -14,12 +14,33 @@ interface PexelsResponse {
   }>;
 }
 
+async function translateIfNeeded(title: string): Promise<string> {
+  try {
+    // Check if the text is already English using a simple heuristic
+    const isEnglish = /^[A-Za-z0-9\s.,!?-]*$/.test(title);
+    if (isEnglish) return title;
+
+    const { data, error } = await supabase.functions.invoke('translate-text', {
+      body: { text: title }
+    });
+
+    if (error) throw error;
+    return data.translatedText || title;
+  } catch (error) {
+    console.error('Translation error:', error);
+    return title; // Fallback to original title if translation fails
+  }
+}
+
 export async function generateImageForTask(title: string, todoId?: string): Promise<string | null> {
   try {
     if (!title) return null;
 
+    // Translate the title if needed
+    const translatedTitle = await translateIfNeeded(title);
+
     // Clean and prepare the search term
-    const searchTerm = title.toLowerCase()
+    const searchTerm = translatedTitle.toLowerCase()
       .replace(/\b(create|add|make|do|complete|finish)\b/g, '')
       .trim();
 

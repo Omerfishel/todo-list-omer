@@ -44,6 +44,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { X as XIcon } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { MapPicker } from './MapPicker';
+import { CalendarView } from './CalendarView';
 
 type SortOption = 'modified' | 'reminder' | 'urgency' | 'created';
 type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
@@ -65,7 +66,7 @@ export function TodoList() {
   const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [view, setView] = useState<'grid' | 'list' | 'calendar'>('grid');
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
 
@@ -131,6 +132,14 @@ export function TodoList() {
     return matchesFilter && matchesCategory && matchesSearch;
   }));
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
       <div className="flex items-center justify-between mb-8">
@@ -138,18 +147,34 @@ export function TodoList() {
           <h1 className="text-4xl font-bold text-indigo-600">To Do List</h1>
           <p className="text-gray-600">Stay organized and productive</p>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
-          className="ml-4"
-        >
-          {viewMode === 'grid' ? (
-            <List className="h-4 w-4" />
-          ) : (
-            <LayoutGrid className="h-4 w-4" />
-          )}
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setView(prev => 
+              prev === 'calendar' ? 'grid' : 
+              prev === 'grid' ? 'list' : 
+              'calendar'
+            )}
+            className="ml-4"
+          >
+            {view === 'calendar' ? (
+              <LayoutGrid className="h-4 w-4" />
+            ) : view === 'grid' ? (
+              <List className="h-4 w-4" />
+            ) : (
+              <CalendarIcon className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Log Out</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-4 mb-8">
@@ -370,18 +395,22 @@ export function TodoList() {
         </div>
       </div>
 
-      <div className={viewMode === 'grid' 
-        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-        : "space-y-4"
-      }>
-        {filteredTodos.map((todo) => (
-          <TodoItemComponent 
-            key={todo.id} 
-            todo={todo} 
-            viewMode={viewMode}
-          />
-        ))}
-      </div>
+      {view === 'calendar' ? (
+        <CalendarView />
+      ) : (
+        <div className={view === 'grid' 
+          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          : "space-y-4"
+        }>
+          {sortedAndFilteredTodos.map((todo) => (
+            <TodoItemComponent 
+              key={todo.id} 
+              todo={todo} 
+              viewMode={view}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
