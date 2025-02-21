@@ -25,7 +25,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ sortBy }: CalendarViewProps) {
-  const { todos, toggleTodo, deleteTodo, updateTodoContent } = useTodo();
+  const { todos, toggleTodo, deleteTodo, updateTodoContent, categories } = useTodo();
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
   const [editingTodoId, setEditingTodoId] = React.useState<string | null>(null);
   const [editTitle, setEditTitle] = React.useState('');
@@ -193,7 +193,9 @@ export function CalendarView({ sortBy }: CalendarViewProps) {
               size="icon"
               onClick={() => toggleTodo(todo.id)}
             >
-              <Check className="h-4 w-4" className={todo.completed ? 'text-green-500' : ''} />
+              <Check 
+                className={`h-4 w-4 ${todo.completed ? 'text-green-500' : ''}`}
+              />
             </Button>
           </div>
         </div>
