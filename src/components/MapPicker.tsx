@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MapPin, Check, Search } from 'lucide-react';
@@ -24,7 +23,7 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
   const [searchInput, setSearchInput] = useState('');
-  const [tempLocation, setTempLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
+  const [tempLocation, setTempLocation] = useState<{ address: string; lat: number; lng: number; } | null>(location);
 
   useEffect(() => {
     if (!isOpen) return;

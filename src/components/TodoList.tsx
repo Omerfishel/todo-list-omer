@@ -844,37 +844,39 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
               {renderCategories(false)}
             </div>
 
-            {todo.reminder && !isEditing && (
-              <div className="text-xs text-gray-500 flex items-center gap-1 ml-auto mr-4">
-                <Clock className="h-3 w-3" />
-                {format(todo.reminder, 'PPp')}
-              </div>
-            )}
+            <div className="flex items-center gap-4 ml-auto">
+              {todo.reminder && !isEditing && (
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {format(todo.reminder, 'PPp')}
+                </div>
+              )}
 
-            {todo.location && !isEditing && (
-              <div className="text-xs text-gray-500 flex items-center gap-1 mr-4">
-                <MapPin className="h-3 w-3" />
-                {todo.location.address}
-              </div>
-            )}
+              {todo.location && !isEditing && (
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {todo.location.address}
+                </div>
+              )}
 
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsEditing(true)}
-                className="text-blue-500 hover:bg-blue-50"
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="text-red-500 hover:bg-red-50"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsEditing(true)}
+                  className="text-blue-500 hover:bg-blue-50"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="text-red-500 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         )}
