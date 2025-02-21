@@ -1,29 +1,31 @@
+
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
 
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
-interface PexelsResponse {
-  photos: Array<{
-    src: {
-      small: string;
-      medium: string;
-    };
-    alt: string;
-  }>;
-}
-
 async function translateIfNeeded(title: string): Promise<{ original: string; translated: string }> {
   try {
-    // Check if the text is already English using a simple heuristic
-    const isEnglish = /^[A-Za-z0-9\s.,!?-]*$/.test(title);
-    if (isEnglish) return { original: title, translated: title };
+    // More robust check for non-English text
+    const nonEnglishPattern = /[^\x00-\x7F]/; // Matches any non-ASCII character
+    const containsNonEnglish = nonEnglishPattern.test(title);
+    
+    if (!containsNonEnglish) {
+      console.log('Text appears to be English:', title);
+      return { original: title, translated: title };
+    }
 
+    console.log('Attempting to translate:', title);
     const { data, error } = await supabase.functions.invoke('translate-text', {
       body: { text: title }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Translation error:', error);
+      throw error;
+    }
+
+    console.log('Translation result:', data);
     return { 
       original: title,
       translated: data.translatedText || title
@@ -40,6 +42,7 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
 
     // First translate the title if needed
     const { original, translated } = await translateIfNeeded(title);
+    console.log('Translation complete:', { original, translated });
 
     // Clean and prepare the search term
     const searchTerm = translated.toLowerCase()
@@ -47,6 +50,8 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
       .trim();
 
     if (!searchTerm) return null;
+
+    console.log('Searching Unsplash with term:', searchTerm);
 
     // Check if we already have an image for this exact title
     const { data: existingTodo } = await supabase
@@ -98,77 +103,4 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
     console.error('Error generating image:', error);
     return null;
   }
-}
-
-async function generateCategoryBasedImage(searchTerm: string): Promise<string | null> {
-  // Define categories with specific search terms for better image results
-  const categories = {
-    health: {
-      keywords: ['doctor', 'dentist', 'medical', 'health', 'hospital', 'appointment'],
-      searchTerm: 'healthcare'
-    },
-    sports: {
-      keywords: ['basketball', 'football', 'soccer', 'sport', 'gym', 'workout', 'exercise'],
-      searchTerm: (term: string) => {
-        if (term.includes('basketball')) return 'basketball';
-        if (term.includes('football')) return 'football';
-        if (term.includes('gym') || term.includes('workout')) return 'fitness';
-        return 'sports';
-      }
-    },
-    education: {
-      keywords: ['study', 'homework', 'school', 'learn', 'book', 'read'],
-      searchTerm: 'education'
-    },
-    shopping: {
-      keywords: ['shop', 'buy', 'store', 'mall', 'purchase'],
-      searchTerm: 'shopping'
-    },
-    work: {
-      keywords: ['meeting', 'office', 'work', 'business', 'presentation'],
-      searchTerm: 'office'
-    },
-    food: {
-      keywords: ['eat', 'cook', 'food', 'meal', 'restaurant'],
-      searchTerm: 'food'
-    },
-    travel: {
-      keywords: ['trip', 'travel', 'vacation', 'flight', 'hotel'],
-      searchTerm: 'travel'
-    },
-    home: {
-      keywords: ['clean', 'house', 'home', 'repair', 'fix'],
-      searchTerm: 'home'
-    }
-  };
-
-  // Find matching category
-  for (const [category, config] of Object.entries(categories)) {
-    if (config.keywords.some(keyword => searchTerm.includes(keyword))) {
-      const searchQuery = typeof config.searchTerm === 'function' 
-        ? config.searchTerm(searchTerm)
-        : config.searchTerm;
-      
-      // Add a timestamp to prevent caching
-      const timestamp = new Date().getTime();
-      return `https://source.unsplash.com/random/300x200?${searchQuery}&t=${timestamp}`;
-    }
-  }
-
-  return null;
-}
-
-function generateFallbackImage(title: string): string {
-  console.log('Falling back to DiceBear for:', title);
-  const style = 'shapes';
-  const searchTerm = title.toLowerCase()
-    .replace(/\b(create|add|make|do|complete|finish)\b/g, '')
-    .replace(/[^\w\s]/g, '')
-    .trim();
-
-  if (!searchTerm) return '';
-
-  const fallbackUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(searchTerm)}&size=200&backgroundColor=ffffff`;
-  console.log('Generated fallback URL:', fallbackUrl);
-  return fallbackUrl;
 }

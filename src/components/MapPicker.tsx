@@ -44,6 +44,49 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
           zoom: location ? 15 : 2,
         });
 
+        // Add click listener to map
+        mapInstance.addListener('click', async (e: google.maps.MapMouseEvent) => {
+          const clickedPos = e.latLng;
+          if (clickedPos) {
+            const geocoder = new google.maps.Geocoder();
+            const result = await geocoder.geocode({ location: clickedPos });
+            if (result.results[0]) {
+              const newLocation = {
+                address: result.results[0].formatted_address,
+                lat: clickedPos.lat(),
+                lng: clickedPos.lng(),
+              };
+              setTempLocation(newLocation);
+              
+              // Update marker
+              if (marker) {
+                marker.setMap(null);
+              }
+              const newMarker = new google.maps.Marker({
+                position: clickedPos,
+                map: mapInstance,
+                draggable: true,
+              });
+              setMarker(newMarker);
+
+              // Add drag end listener to new marker
+              newMarker.addListener('dragend', async () => {
+                const position = newMarker.getPosition();
+                if (position) {
+                  const geocodeResult = await geocoder.geocode({ location: position });
+                  if (geocodeResult.results[0]) {
+                    setTempLocation({
+                      address: geocodeResult.results[0].formatted_address,
+                      lat: position.lat(),
+                      lng: position.lng(),
+                    });
+                  }
+                }
+              });
+            }
+          }
+        });
+
         setMap(mapInstance);
 
         if (location) {
