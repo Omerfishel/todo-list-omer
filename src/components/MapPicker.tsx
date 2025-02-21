@@ -1,14 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { MapPin } from 'lucide-react';
+import { MapPin, Check, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
 import { loadGoogleMaps, isGoogleMapsLoaded } from '@/lib/maps';
 
 interface MapPickerProps {
@@ -21,8 +23,8 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
   const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [marker, setMarker] = useState<google.maps.Marker | null>(null);
-  const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
-  const [searchInput, setSearchInput] = useState<HTMLInputElement | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [tempLocation, setTempLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -57,7 +59,7 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
               const geocoder = new google.maps.Geocoder();
               const result = await geocoder.geocode({ location: position });
               if (result.results[0]) {
-                onLocationChange({
+                setTempLocation({
                   address: result.results[0].formatted_address,
                   lat: position.lat(),
                   lng: position.lng(),
@@ -68,63 +70,68 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
 
           setMarker(markerInstance);
         }
-
-        if (searchInput) {
-          const searchBoxInstance = new google.maps.places.SearchBox(searchInput);
-          mapInstance.controls[google.maps.ControlPosition.TOP_CENTER].push(searchInput);
-
-          searchBoxInstance.addListener('places_changed', () => {
-            const places = searchBoxInstance.getPlaces();
-            if (!places || places.length === 0) return;
-
-            const place = places[0];
-            if (!place.geometry || !place.geometry.location) return;
-
-            mapInstance.setCenter(place.geometry.location);
-            mapInstance.setZoom(15);
-
-            if (marker) {
-              marker.setMap(null);
-            }
-
-            const newMarker = new google.maps.Marker({
-              map: mapInstance,
-              position: place.geometry.location,
-              draggable: true,
-            });
-
-            newMarker.addListener('dragend', async () => {
-              const position = newMarker.getPosition();
-              if (position) {
-                const geocoder = new google.maps.Geocoder();
-                const result = await geocoder.geocode({ location: position });
-                if (result.results[0]) {
-                  onLocationChange({
-                    address: result.results[0].formatted_address,
-                    lat: position.lat(),
-                    lng: position.lng(),
-                  });
-                }
-              }
-            });
-
-            setMarker(newMarker);
-            onLocationChange({
-              address: place.formatted_address || '',
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
-            });
-          });
-
-          setSearchBox(searchBoxInstance);
-        }
       } catch (error) {
         console.error('Error initializing map:', error);
       }
     };
 
     initMap();
-  }, [isOpen, mapContainer, searchInput, location]);
+  }, [isOpen, mapContainer, location]);
+
+  const handleSearch = async () => {
+    if (!map || !searchInput.trim()) return;
+
+    const geocoder = new google.maps.Geocoder();
+    try {
+      const result = await geocoder.geocode({ address: searchInput });
+      if (result.results[0] && result.results[0].geometry) {
+        const { location: position } = result.results[0].geometry;
+        
+        map.setCenter(position);
+        map.setZoom(15);
+
+        if (marker) {
+          marker.setMap(null);
+        }
+
+        const newMarker = new google.maps.Marker({
+          map,
+          position,
+          draggable: true,
+        });
+
+        newMarker.addListener('dragend', async () => {
+          const newPosition = newMarker.getPosition();
+          if (newPosition) {
+            const geocodeResult = await geocoder.geocode({ location: newPosition });
+            if (geocodeResult.results[0]) {
+              setTempLocation({
+                address: geocodeResult.results[0].formatted_address,
+                lat: newPosition.lat(),
+                lng: newPosition.lng(),
+              });
+            }
+          }
+        });
+
+        setMarker(newMarker);
+        setTempLocation({
+          address: result.results[0].formatted_address,
+          lat: position.lat(),
+          lng: position.lng(),
+        });
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (tempLocation) {
+      onLocationChange(tempLocation);
+      setIsOpen(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -138,17 +145,33 @@ export function MapPicker({ location, onLocationChange }: MapPickerProps) {
           <DialogTitle>Select Location</DialogTitle>
         </DialogHeader>
         <div className="mt-4 space-y-4">
-          <input
-            ref={setSearchInput}
-            type="text"
-            placeholder="Search for a location"
-            className="w-full px-4 py-2 border rounded-md"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search for a location"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <Button onClick={handleSearch} variant="ghost" size="icon">
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
           <div
             ref={setMapContainer}
             className="w-full h-[400px] rounded-lg overflow-hidden"
           />
+          {tempLocation && (
+            <p className="text-sm text-gray-500">
+              Selected: {tempLocation.address}
+            </p>
+          )}
         </div>
+        <DialogFooter>
+          <Button onClick={handleConfirm} disabled={!tempLocation}>
+            <Check className="h-4 w-4 mr-2" />
+            Confirm Location
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

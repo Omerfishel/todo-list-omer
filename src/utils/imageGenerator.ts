@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
 
-const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY || 'RsxB3NqUzTzVzgDTuT5ZBEwkUDwqEXYF8vRXFZB9qQrGKjEGYhYmpXG6'; // Default demo key
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 interface PexelsResponse {
@@ -14,21 +13,24 @@ interface PexelsResponse {
   }>;
 }
 
-async function translateIfNeeded(title: string): Promise<string> {
+async function translateIfNeeded(title: string): Promise<{ original: string; translated: string }> {
   try {
     // Check if the text is already English using a simple heuristic
     const isEnglish = /^[A-Za-z0-9\s.,!?-]*$/.test(title);
-    if (isEnglish) return title;
+    if (isEnglish) return { original: title, translated: title };
 
     const { data, error } = await supabase.functions.invoke('translate-text', {
       body: { text: title }
     });
 
     if (error) throw error;
-    return data.translatedText || title;
+    return { 
+      original: title,
+      translated: data.translatedText || title
+    };
   } catch (error) {
     console.error('Translation error:', error);
-    return title; // Fallback to original title if translation fails
+    return { original: title, translated: title };
   }
 }
 
@@ -36,11 +38,11 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
   try {
     if (!title) return null;
 
-    // Translate the title if needed
-    const translatedTitle = await translateIfNeeded(title);
+    // First translate the title if needed
+    const { original, translated } = await translateIfNeeded(title);
 
     // Clean and prepare the search term
-    const searchTerm = translatedTitle.toLowerCase()
+    const searchTerm = translated.toLowerCase()
       .replace(/\b(create|add|make|do|complete|finish)\b/g, '')
       .trim();
 
@@ -50,16 +52,15 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
     const { data: existingTodo } = await supabase
       .from('todos')
       .select('image_url')
-      .eq('title', title)
+      .eq('title', original)
       .not('image_url', 'is', null)
       .single();
 
     if (existingTodo?.image_url) {
-      console.log('Using existing image for:', title);
+      console.log('Using existing image for:', original);
       return existingTodo.image_url;
     }
 
-    // If no existing image, generate a new one
     try {
       const response = await axios.get('https://api.unsplash.com/photos/random', {
         headers: {
@@ -75,7 +76,6 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
         const imageUrl = response.data.urls.small;
         console.log('Generated new image URL:', imageUrl);
 
-        // If we have a todoId, update the image_url in the database
         if (todoId) {
           const { error: updateError } = await supabase
             .from('todos')
@@ -94,7 +94,6 @@ export async function generateImageForTask(title: string, todoId?: string): Prom
     }
 
     return null;
-
   } catch (error) {
     console.error('Error generating image:', error);
     return null;
