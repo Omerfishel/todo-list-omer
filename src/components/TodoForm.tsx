@@ -32,7 +32,7 @@ export function TodoForm({ onSubmit }: TodoFormProps) {
         selectedCategory,
         '',
         reminder,
-        location,
+        location || undefined,
         urgency
       );
       setTitle('');

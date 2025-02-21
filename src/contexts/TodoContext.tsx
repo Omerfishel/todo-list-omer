@@ -17,7 +17,14 @@ export interface TodoItem extends Todo {
 interface TodoContextType {
   todos: TodoItem[];
   categories: Category[];
-  addTodo: (title: string, categoryId: string, content?: string, reminder?: Date, location?: { address: string; lat: number; lng: number; }) => Promise<void>;
+  addTodo: (
+    title: string, 
+    categoryId: string, 
+    content?: string, 
+    reminder?: Date, 
+    location?: { address: string; lat: number; lng: number; },
+    urgency?: 'low' | 'medium' | 'high' | 'urgent'
+  ) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
   updateTodoContent: (
@@ -74,7 +81,14 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     loadData();
   }, []);
 
-  const addTodo = async (title: string, categoryId: string, content?: string, reminder?: Date, location?: { address: string; lat: number; lng: number; }) => {
+  const addTodo = async (
+    title: string, 
+    categoryId: string, 
+    content?: string, 
+    reminder?: Date, 
+    location?: { address: string; lat: number; lng: number; },
+    urgency: 'low' | 'medium' | 'high' | 'urgent' = 'medium'
+  ) => {
     try {
       const newTodo = await todoApi.create({
         title,
@@ -83,7 +97,8 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
         category_ids: categoryId ? [categoryId] : [],
         reminder,
         location,
-        image_url: null
+        image_url: null,
+        urgency
       });
 
       setTodos(prev => [{ ...newTodo, subItems: [] }, ...prev]);
