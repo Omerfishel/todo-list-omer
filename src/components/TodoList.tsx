@@ -51,14 +51,15 @@ type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
 
 interface TodoItemExtended extends TodoItem {
   urgency?: UrgencyLevel;
+  description?: string;
 }
 
-interface TodoItemComponentProps {
+interface TodoItemProps {
   todo: TodoItemExtended;
   viewMode: 'grid' | 'list';
 }
 
-function TodoItemComponent({ todo, viewMode }: TodoItemComponentProps) {
+const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
@@ -85,12 +86,10 @@ function TodoItemComponent({ todo, viewMode }: TodoItemComponentProps) {
       const particle = document.createElement('div');
       particle.className = 'dust-particle';
       
-      // Random position within the container
       const x = Math.random() * container.offsetWidth;
       const y = Math.random() * container.offsetHeight;
       
-      // Random direction for particle movement, but biased towards left
-      const angle = Math.random() * Math.PI - Math.PI / 4; // -45 to 135 degrees
+      const angle = Math.random() * Math.PI - Math.PI / 4;
       const distance = 50 + Math.random() * 100;
       const tx = Math.cos(angle) * distance;
       const ty = Math.sin(angle) * distance;
@@ -195,11 +194,9 @@ function TodoItemComponent({ todo, viewMode }: TodoItemComponentProps) {
 
   const getSwipeBackground = (translateX: number) => {
     if (translateX > 0) {
-      // Green gradient for right swipe
       const opacity = Math.min(Math.abs(translateX) / 200, 0.5);
       return `linear-gradient(to right, white, rgba(34, 197, 94, ${opacity}))`;
     } else if (translateX < 0) {
-      // Red gradient for left swipe
       const opacity = Math.min(Math.abs(translateX) / 200, 0.5);
       return `linear-gradient(to left, white, rgba(239, 68, 68, ${opacity}))`;
     }
@@ -583,9 +580,9 @@ function TodoItemComponent({ todo, viewMode }: TodoItemComponentProps) {
       </div>
     </>
   );
-}
+};
 
-export function TodoList() {
+export const TodoList = () => {
   const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
   const { signOut } = useAuth();
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -989,4 +986,4 @@ export function TodoList() {
       )}
     </div>
   );
-}
+};
