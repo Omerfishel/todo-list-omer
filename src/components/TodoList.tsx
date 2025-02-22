@@ -282,76 +282,84 @@ export function TodoList() {
             </Select>
 
             <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Calendar className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Calendar className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                <div className="p-3">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    initialFocus
-                  />
-                  {selectedDate && (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm font-medium">Select Time</span>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          {[9, 12, 15, 18].map(hour => {
-                            const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
-                            return (
+                  <div className="p-3">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                    />
+                    {selectedDate && (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm font-medium">Select Time</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[9, 12, 15, 18].map(hour => {
+                              const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
+                              return (
+                                <Button
+                                  key={hour}
+                                  variant={selectedTime === timeValue ? 'default' : 'outline'}
+                                  className="text-xs py-1"
+                                  onClick={() => setSelectedTime(timeValue)}
+                                >
+                                  {format(setHours(selectedDate, hour), 'ha')}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={selectedTime}
+                              onChange={(e) => setSelectedTime(e.target.value)}
+                              className="flex-1"
+                            />
+                            {selectedTime && (
                               <Button
-                                key={hour}
-                                variant={selectedTime === timeValue ? 'default' : 'outline'}
-                                className="text-xs py-1"
-                                onClick={() => setSelectedTime(timeValue)}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedTime('')}
+                                className="text-red-500 hover:text-red-600"
                               >
-                                {format(setHours(selectedDate, hour), 'ha')}
+                                <X className="h-4 w-4" />
                               </Button>
-                            );
-                          })}
-                        </div>
-                        <div className="flex items-center gap-2">
-                      <Input
-                        type="time"
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                            className="flex-1"
-                          />
-                          {selectedTime && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedTime('')}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
+                            )}
+                          </div>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
               
               <MapPicker
                 location={editLocation}
                 onLocationChange={setEditLocation}
               />
 
-              {selectedDate && (
-                <span className="text-sm text-gray-600">
-                  {format(selectedDate, 'MMM d')}
-                  {selectedTime && `, ${format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}`}
-                </span>
-              )}
+              <div className="flex gap-2 items-center">
+                {selectedDate && (
+                  <span className="text-sm text-gray-600">
+                    {format(selectedDate, 'MMM d')}
+                    {selectedTime && `, ${format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}`}
+                  </span>
+                )}
+                {editLocation && (
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {editLocation.address}
+                  </span>
+                )}
+              </div>
             </div>
 
             <Button type="submit" className="ml-auto">
@@ -452,7 +460,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
   const [taskImage, setTaskImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [dustEffect, setDustEffect] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(isDeleting);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
   const [editContent, setEditContent] = useState(todo.content || '');
@@ -824,63 +832,61 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
           </>
         ) : (
           <div className="flex items-center gap-4 flex-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => toggleTodo(todo.id)}
-              className={todo.completed ? 'text-green-500' : ''}
-            >
-              {todo.completed ? (
-                <Sparkles className="h-4 w-4 animate-scaleIn" />
-              ) : (
-                <Check className="h-4 w-4 opacity-30" />
-              )}
-            </Button>
+            {!isEditing && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="text-red-500 hover:bg-red-50"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
 
-            <div className="flex-1">
-              <h3 className={`font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-                {todo.title}
-              </h3>
-              {renderCategories(false)}
-            </div>
-
-            <div className="flex items-center gap-4 ml-auto">
-              {todo.reminder && !isEditing && (
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {format(todo.reminder, 'PPp')}
-                </div>
-              )}
-
-              {todo.location && !isEditing && (
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {todo.location.address}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsEditing(true)}
-                  className="text-blue-500 hover:bg-blue-50"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="text-red-500 hover:bg-red-50"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
+            {isEditing ? (
+              <div className="flex-1 space-y-4">
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="text-lg font-medium"
+                />
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {editReminder ? format(editReminder, 'MMM d, h:mm a') : 'Add reminder'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editReminder}
+                            onSelect={setEditReminder}
+                            initialFocus
+                          />
+                          {editReminder && (
+                            <div className="mt-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <span className="text-sm font-medium">Select Time</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                {[9, 12, 15, 18].map(hour => {
+                                  const timeValue = format(setHours(editReminder, hour), 'HH:mm');
+                                  return (
+                                    <Button
+                                      key={hour}
+                                      variant={selectedTime === timeValue ? 'default' : 'outline'}
+                                      className="text-xs py-1"
+                                      onClick={() => setSelectedTime(timeValue)}
+                                    >
+                                      {format(setHours(editReminder, hour), 'ha')}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Input
