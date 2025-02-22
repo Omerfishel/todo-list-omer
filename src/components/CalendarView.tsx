@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useTodo } from '@/contexts/TodoContext';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSwipeable } from 'react-swipeable';
 import { RichTextEditor } from './RichTextEditor';
+import type { TodoItem } from '@/contexts/TodoContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +20,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface CalendarViewProps {
-  sortBy: 'modified' | 'reminder' | 'urgency' | 'created';
+interface TodoItemExtended extends TodoItem {
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+  description?: string;
 }
 
-export function CalendarView({ sortBy }: CalendarViewProps) {
-  const { todos, toggleTodo, deleteTodo, updateTodoContent, categories } = useTodo();
+interface CalendarViewProps {
+  sortBy: 'modified' | 'reminder' | 'urgency' | 'created';
+  todos: TodoItemExtended[];
+}
+
+export function CalendarView({ sortBy, todos }: CalendarViewProps) {
+  const { toggleTodo, deleteTodo, updateTodoContent, categories } = useTodo();
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
   const [editingTodoId, setEditingTodoId] = React.useState<string | null>(null);
   const [editTitle, setEditTitle] = React.useState('');
@@ -34,7 +40,6 @@ export function CalendarView({ sortBy }: CalendarViewProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [todoToDelete, setTodoToDelete] = React.useState<string | null>(null);
 
-  // Group and sort todos by date
   const todosByDate = React.useMemo(() => {
     const grouped = todos.reduce((acc, todo) => {
       if (todo.reminder) {
@@ -47,7 +52,6 @@ export function CalendarView({ sortBy }: CalendarViewProps) {
       return acc;
     }, {} as Record<string, typeof todos>);
 
-    // Sort todos within each date
     Object.keys(grouped).forEach(date => {
       grouped[date].sort((a, b) => {
         switch (sortBy) {
@@ -91,7 +95,7 @@ export function CalendarView({ sortBy }: CalendarViewProps) {
     setDeleteDialogOpen(false);
   };
 
-  const TodoItem = ({ todo }: { todo: typeof todos[0] }) => {
+  const TodoItem = ({ todo }: { todo: TodoItemExtended }) => {
     const swipeHandlers = useSwipeable({
       onSwipedLeft: () => setTodoToDelete(todo.id),
       onSwipedRight: () => toggleTodo(todo.id),

@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -920,39 +921,4 @@ export const TodoList = () => {
             onClick={() => setFilter('active')}
             className="w-24"
           >
-            Active
-          </Button>
-          <Button
-            variant={filter === 'completed' ? 'default' : 'outline'}
-            onClick={() => setFilter('completed')}
-            className="w-24"
-          >
-            Completed
-          </Button>
-        </div>
-
-        {view === 'calendar' ? (
-          <CalendarView 
-            todos={sortedAndFilteredTodos} 
-            sortBy={sortBy}
-          />
-        ) : (
-          <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-            {sortedAndFilteredTodos.map(todo => (
-              <TodoItemComponent
-                key={todo.id}
-                todo={todo}
-                viewMode={view}
-              />
-            ))}
-            {sortedAndFilteredTodos.length === 0 && (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                No tasks found
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+            
