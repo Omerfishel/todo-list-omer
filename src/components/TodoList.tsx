@@ -932,7 +932,10 @@ export const TodoList = () => {
         </div>
 
         {view === 'calendar' ? (
-          <CalendarView todos={sortedAndFilteredTodos} />
+          <CalendarView 
+            todos={sortedAndFilteredTodos} 
+            sortBy={sortBy}
+          />
         ) : (
           <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
             {sortedAndFilteredTodos.map(todo => (
