@@ -59,7 +59,6 @@ interface TodoItemProps {
   viewMode: 'grid' | 'list';
 }
 
-// Separate TodoItemComponent into a named function component
 const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -583,7 +582,6 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   );
 }
 
-// Main TodoList component as a named function component
 export const TodoList = () => {
   const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
   const { signOut } = useAuth();
@@ -910,13 +908,48 @@ export const TodoList = () => {
 
       <div className="space-y-6 mb-8">
         <div className="flex justify-center gap-2 border-b pb-4">
-        <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
-          onClick={() => setFilter('all')}
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            onClick={() => setFilter('all')}
             className="w-24"
-        >
-          All
-        </Button>
-        <Button
-          variant={filter === 'active' ? 'default' : 'outline'}
-          onClick={() =>
+          >
+            All
+          </Button>
+          <Button
+            variant={filter === 'active' ? 'default' : 'outline'}
+            onClick={() => setFilter('active')}
+            className="w-24"
+          >
+            Active
+          </Button>
+          <Button
+            variant={filter === 'completed' ? 'default' : 'outline'}
+            onClick={() => setFilter('completed')}
+            className="w-24"
+          >
+            Completed
+          </Button>
+        </div>
+
+        {view === 'calendar' ? (
+          <CalendarView todos={sortedAndFilteredTodos} />
+        ) : (
+          <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {sortedAndFilteredTodos.map(todo => (
+              <TodoItemComponent
+                key={todo.id}
+                todo={todo}
+                viewMode={view}
+              />
+            ))}
+            {sortedAndFilteredTodos.length === 0 && (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                No tasks found
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
