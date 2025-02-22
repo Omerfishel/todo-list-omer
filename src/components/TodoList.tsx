@@ -53,413 +53,12 @@ interface TodoItemExtended extends TodoItem {
   urgency?: UrgencyLevel;
 }
 
-export function TodoList() {
-  const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
-  const { signOut } = useAuth();
-  const [newTodoTitle, setNewTodoTitle] = useState('');
-  const [newTodoContent, setNewTodoContent] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedTime, setSelectedTime] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
-  const [view, setView] = useState<'grid' | 'list' | 'calendar'>('grid');
-  const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('modified');
-
-  const renderSortSelector = () => (
-    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Sort by" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="modified">Last Modified</SelectItem>
-        <SelectItem value="created">Creation Date</SelectItem>
-        <SelectItem value="reminder">Reminder Date</SelectItem>
-        <SelectItem value="urgency">Urgency</SelectItem>
-      </SelectContent>
-    </Select>
-  );
-
-  const getViewIcon = () => {
-    switch (view) {
-      case 'grid':
-        return <LayoutGrid className="h-4 w-4" />;
-      case 'list':
-        return <List className="h-4 w-4" />;
-      case 'calendar':
-        return <Calendar className="h-4 w-4" />;
-    }
-  };
-
-  const generateRandomPastelColor = () => {
-    const hue = Math.floor(Math.random() * 360);
-    return `hsl(${hue}, 70%, 90%)`;
-  };
-
-  const handleAddTodo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newTodoTitle.trim()) {
-      const reminder = selectedDate && selectedTime
-        ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
-        : selectedDate;
-      
-      addTodo(
-        newTodoTitle.trim(), 
-        selectedCategory, 
-        newTodoContent, 
-        reminder, 
-        editLocation
-      );
-      
-      setNewTodoTitle('');
-      setNewTodoContent('');
-      setSelectedDate(undefined);
-      setSelectedTime('');
-      setEditLocation(null);
-      
-      const editor = document.querySelector('.ProseMirror');
-      if (editor) {
-        editor.innerHTML = '';
-      }
-    }
-  };
-
-  const handleAddCategory = () => {
-    if (newCategoryName.trim()) {
-      const color = newCategoryColor === '#E5DEFF' ? generateRandomPastelColor() : newCategoryColor;
-      addCategory(newCategoryName.trim(), color);
-      setNewCategoryName('');
-      setNewCategoryColor('#E5DEFF');
-      setIsNewCategoryDialogOpen(false);
-    }
-  };
-
-  const sortTodos = (todos: TodoItemExtended[]) => {
-    return [...todos].sort((a, b) => {
-      switch (sortBy) {
-        case 'reminder':
-          if (!a.reminder) return 1;
-          if (!b.reminder) return -1;
-          return new Date(b.reminder).getTime() - new Date(a.reminder).getTime();
-        case 'urgency':
-          const urgencyOrder = { urgent: 3, high: 2, medium: 1, low: 0 };
-          return (urgencyOrder[b.urgency || 'low'] || 0) - (urgencyOrder[a.urgency || 'low'] || 0);
-        case 'created':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'modified':
-        default:
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-      }
-    });
-  };
-
-  const filteredTodos = todos.filter(todo => {
-    const matchesFilter = filter === 'all' || 
-      (filter === 'completed' ? todo.completed : !todo.completed);
-    const matchesCategory = !categoryFilter || 
-      (todo.category_ids || []).includes(categoryFilter);
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = !searchQuery || 
-      todo.title.toLowerCase().includes(searchLower) ||
-      (todo.content || '').toLowerCase().includes(searchLower) ||
-      (todo.description || '').toLowerCase().includes(searchLower);
-    return matchesFilter && matchesCategory && matchesSearch;
-  });
-
-  const sortedAndFilteredTodos = sortTodos(filteredTodos);
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-indigo-600">To Do List</h1>
-          <p className="text-gray-600">Stay organized and productive</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setView(prev => 
-              prev === 'calendar' ? 'grid' : 
-              prev === 'grid' ? 'list' : 
-              'calendar'
-            )}
-            className="ml-4"
-          >
-            {getViewIcon()}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Log Out</span>
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex gap-4 mb-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tasks..."
-            className="pl-10"
-          />
-        </div>
-        {renderSortSelector()}
-        <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">Add Category</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Category</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <Input
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Category name"
-              />
-              <Input
-                type="color"
-                value={newCategoryColor}
-                onChange={(e) => setNewCategoryColor(e.target.value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAddCategory}>Add Category</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
-        <form onSubmit={handleAddTodo} className="space-y-4">
-          <Input
-            type="text"
-            value={newTodoTitle}
-            onChange={(e) => setNewTodoTitle(e.target.value)}
-            placeholder="Task title..."
-            className="text-lg font-semibold"
-          />
-          
-          <RichTextEditor
-            content={newTodoContent}
-            onChange={setNewTodoContent}
-          />
-
-          <div className="flex gap-2">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(category => (
-                  <SelectItem
-                    key={category.id}
-                    value={category.id}
-                    className="flex items-center gap-2"
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <div className="p-3">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      initialFocus
-                    />
-                    {selectedDate && (
-                        <div className="mt-3 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm font-medium">Select Time</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2">
-                            {[9, 12, 15, 18].map(hour => {
-                              const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
-                              return (
-                                <Button
-                                  key={hour}
-                                  variant={selectedTime === timeValue ? 'default' : 'outline'}
-                                  className="text-xs py-1"
-                                  onClick={() => setSelectedTime(timeValue)}
-                                >
-                                  {format(setHours(selectedDate, hour), 'ha')}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="time"
-                              value={selectedTime}
-                              onChange={(e) => setSelectedTime(e.target.value)}
-                              className="flex-1"
-                            />
-                            {selectedTime && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedTime('')}
-                                className="text-red-500 hover:text-red-600"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <MapPicker
-                location={editLocation}
-                onLocationChange={setEditLocation}
-              />
-
-              <div className="flex gap-2 items-center">
-                {selectedDate && (
-                  <span className="text-sm text-gray-600">
-                    {format(selectedDate, 'MMM d')}
-                    {selectedTime && `, ${format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}`}
-                  </span>
-                )}
-                {editLocation && (
-                  <span className="text-sm text-gray-600 flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {editLocation.address}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <Button type="submit" className="ml-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-          </div>
-        </form>
-      </div>
-
-      <div className="space-y-6 mb-8">
-        <div className="flex justify-center gap-2 border-b pb-4">
-        <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
-          onClick={() => setFilter('all')}
-            className="w-24"
-        >
-          All
-        </Button>
-        <Button
-          variant={filter === 'active' ? 'default' : 'outline'}
-          onClick={() => setFilter('active')}
-            className="w-24"
-        >
-          Active
-        </Button>
-        <Button
-          variant={filter === 'completed' ? 'default' : 'outline'}
-          onClick={() => setFilter('completed')}
-            className="w-24"
-        >
-          Completed
-        </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2 justify-center">
-        {categories.map(category => (
-            <div key={category.id} className="flex items-center gap-1">
-              <div className="flex items-center">
-          <Button
-            variant={categoryFilter === category.id ? 'default' : 'outline'}
-            onClick={() => setCategoryFilter(prev => prev === category.id ? '' : category.id)}
-            className="flex items-center gap-2"
-          >
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: category.color }}
-            />
-            {category.name}
-                  <span className="hidden md:inline-block ml-2 hover:bg-red-100 hover:text-red-500 rounded-full p-1 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteCategory(category.id);
-                    }}
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteCategory(category.id)}
-                  className="md:hidden h-8 w-8 p-0 hover:bg-red-100 hover:text-red-500"
-                >
-                  <XIcon className="h-4 w-4" />
-          </Button>
-              </div>
-            </div>
-        ))}
-        </div>
-      </div>
-
-      {view === 'calendar' ? (
-        <CalendarView sortBy={sortBy} />
-      ) : (
-        <div className={view === 'grid' 
-          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          : "space-y-4"
-        }>
-          {sortedAndFilteredTodos.map((todo) => (
-            <TodoItemComponent 
-              key={todo.id} 
-              todo={todo} 
-              viewMode={view}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+interface TodoItemComponentProps {
+  todo: TodoItemExtended;
+  viewMode: 'grid' | 'list';
 }
 
-function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMode: 'grid' | 'list' }) {
+function TodoItemComponent({ todo, viewMode }: TodoItemComponentProps) {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
@@ -986,4 +585,408 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
   );
 }
 
-export { TodoList };
+export function TodoList() {
+  const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
+  const { signOut } = useAuth();
+  const [newTodoTitle, setNewTodoTitle] = useState('');
+  const [newTodoContent, setNewTodoContent] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
+  const [view, setView] = useState<'grid' | 'list' | 'calendar'>('grid');
+  const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('modified');
+
+  const renderSortSelector = () => (
+    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Sort by" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="modified">Last Modified</SelectItem>
+        <SelectItem value="created">Creation Date</SelectItem>
+        <SelectItem value="reminder">Reminder Date</SelectItem>
+        <SelectItem value="urgency">Urgency</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const getViewIcon = () => {
+    switch (view) {
+      case 'grid':
+        return <LayoutGrid className="h-4 w-4" />;
+      case 'list':
+        return <List className="h-4 w-4" />;
+      case 'calendar':
+        return <Calendar className="h-4 w-4" />;
+    }
+  };
+
+  const generateRandomPastelColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 90%)`;
+  };
+
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTodoTitle.trim()) {
+      const reminder = selectedDate && selectedTime
+        ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
+        : selectedDate;
+      
+      addTodo(
+        newTodoTitle.trim(), 
+        selectedCategory, 
+        newTodoContent, 
+        reminder, 
+        editLocation
+      );
+      
+      setNewTodoTitle('');
+      setNewTodoContent('');
+      setSelectedDate(undefined);
+      setSelectedTime('');
+      setEditLocation(null);
+      
+      const editor = document.querySelector('.ProseMirror');
+      if (editor) {
+        editor.innerHTML = '';
+      }
+    }
+  };
+
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      const color = newCategoryColor === '#E5DEFF' ? generateRandomPastelColor() : newCategoryColor;
+      addCategory(newCategoryName.trim(), color);
+      setNewCategoryName('');
+      setNewCategoryColor('#E5DEFF');
+      setIsNewCategoryDialogOpen(false);
+    }
+  };
+
+  const sortTodos = (todos: TodoItemExtended[]) => {
+    return [...todos].sort((a, b) => {
+      switch (sortBy) {
+        case 'reminder':
+          if (!a.reminder) return 1;
+          if (!b.reminder) return -1;
+          return new Date(b.reminder).getTime() - new Date(a.reminder).getTime();
+        case 'urgency':
+          const urgencyOrder = { urgent: 3, high: 2, medium: 1, low: 0 };
+          return (urgencyOrder[b.urgency || 'low'] || 0) - (urgencyOrder[a.urgency || 'low'] || 0);
+        case 'created':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'modified':
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    });
+  };
+
+  const filteredTodos = todos.filter(todo => {
+    const matchesFilter = filter === 'all' || 
+      (filter === 'completed' ? todo.completed : !todo.completed);
+    const matchesCategory = !categoryFilter || 
+      (todo.category_ids || []).includes(categoryFilter);
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery || 
+      todo.title.toLowerCase().includes(searchLower) ||
+      (todo.content || '').toLowerCase().includes(searchLower) ||
+      (todo.description || '').toLowerCase().includes(searchLower);
+    return matchesFilter && matchesCategory && matchesSearch;
+  });
+
+  const sortedAndFilteredTodos = sortTodos(filteredTodos);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-indigo-600">To Do List</h1>
+          <p className="text-gray-600">Stay organized and productive</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setView(prev => 
+              prev === 'calendar' ? 'grid' : 
+              prev === 'grid' ? 'list' : 
+              'calendar'
+            )}
+            className="ml-4"
+          >
+            {getViewIcon()}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Log Out</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex gap-4 mb-8">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tasks..."
+            className="pl-10"
+          />
+        </div>
+        {renderSortSelector()}
+        <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">Add Category</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Category name"
+              />
+              <Input
+                type="color"
+                value={newCategoryColor}
+                onChange={(e) => setNewCategoryColor(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleAddCategory}>Add Category</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+        <form onSubmit={handleAddTodo} className="space-y-4">
+          <Input
+            type="text"
+            value={newTodoTitle}
+            onChange={(e) => setNewTodoTitle(e.target.value)}
+            placeholder="Task title..."
+            className="text-lg font-semibold"
+          />
+          
+          <RichTextEditor
+            content={newTodoContent}
+            onChange={setNewTodoContent}
+          />
+
+          <div className="flex gap-2">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(category => (
+                  <SelectItem
+                    key={category.id}
+                    value={category.id}
+                    className="flex items-center gap-2"
+                  >
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Calendar className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-3">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                    />
+                    {selectedDate && (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm font-medium">Select Time</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[9, 12, 15, 18].map(hour => {
+                              const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
+                              return (
+                                <Button
+                                  key={hour}
+                                  variant={selectedTime === timeValue ? 'default' : 'outline'}
+                                  className="text-xs py-1"
+                                  onClick={() => setSelectedTime(timeValue)}
+                                >
+                                  {format(setHours(selectedDate, hour), 'ha')}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={selectedTime}
+                              onChange={(e) => setSelectedTime(e.target.value)}
+                              className="flex-1"
+                            />
+                            {selectedTime && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedTime('')}
+                                className="text-red-500 hover:text-red-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <MapPicker
+                location={editLocation}
+                onLocationChange={setEditLocation}
+              />
+
+              <div className="flex gap-2 items-center">
+                {selectedDate && (
+                  <span className="text-sm text-gray-600">
+                    {format(selectedDate, 'MMM d')}
+                    {selectedTime && `, ${format(new Date(`2000-01-01T${selectedTime}`), 'h:mm a')}`}
+                  </span>
+                )}
+                {editLocation && (
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {editLocation.address}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <Button type="submit" className="ml-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <div className="space-y-6 mb-8">
+        <div className="flex justify-center gap-2 border-b pb-4">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+            className="w-24"
+        >
+          All
+        </Button>
+        <Button
+          variant={filter === 'active' ? 'default' : 'outline'}
+          onClick={() => setFilter('active')}
+            className="w-24"
+        >
+          Active
+        </Button>
+        <Button
+          variant={filter === 'completed' ? 'default' : 'outline'}
+          onClick={() => setFilter('completed')}
+            className="w-24"
+        >
+          Completed
+        </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 justify-center">
+        {categories.map(category => (
+            <div key={category.id} className="flex items-center gap-1">
+              <div className="flex items-center">
+          <Button
+            variant={categoryFilter === category.id ? 'default' : 'outline'}
+            onClick={() => setCategoryFilter(prev => prev === category.id ? '' : category.id)}
+            className="flex items-center gap-2"
+          >
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
+            {category.name}
+                  <span className="hidden md:inline-block ml-2 hover:bg-red-100 hover:text-red-500 rounded-full p-1 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteCategory(category.id);
+                    }}
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteCategory(category.id)}
+                  className="md:hidden h-8 w-8 p-0 hover:bg-red-100 hover:text-red-500"
+                >
+                  <XIcon className="h-4 w-4" />
+          </Button>
+              </div>
+            </div>
+        ))}
+        </div>
+      </div>
+
+      {view === 'calendar' ? (
+        <CalendarView sortBy={sortBy} />
+      ) : (
+        <div className={view === 'grid' 
+          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          : "space-y-4"
+        }>
+          {sortedAndFilteredTodos.map((todo) => (
+            <TodoItemComponent 
+              key={todo.id} 
+              todo={todo} 
+              viewMode={view}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
