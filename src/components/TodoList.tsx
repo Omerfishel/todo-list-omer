@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -740,52 +741,43 @@ export const TodoList = () => {
         </div>
       </div>
 
-      <div className="space-y-6 mb-8">
-        <div className="flex justify-center gap-2 border-b pb-4">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilter('all')}
-            className="w-24"
-          >
-            All
-          </Button>
-          <Button
-            variant={filter === 'active' ? 'default' : 'outline'}
-            onClick={() => setFilter('active')}
-            className="w-24"
-          >
-            Active
-          </Button>
-          <Button
-            variant={filter === 'completed' ? 'default' : 'outline'}
-            onClick={() => setFilter('completed')}
-            className="w-24"
-          >
-            Completed
-          </Button>
-        </div>
-
-        {view === 'calendar' ? (
-          <CalendarView 
-            todos={sortedAndFilteredTodos} 
-            sortBy={sortBy}
+      <div className="flex gap-4 mb-8">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tasks..."
+            className="pl-10"
           />
-        ) : (
-          <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-            {sortedAndFilteredTodos.map(todo => (
-              <TodoItemComponent
-                key={todo.id}
-                todo={todo}
-                viewMode={view}
+        </div>
+        {renderSortSelector()}
+        <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">Add Category</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Category name"
               />
-            ))}
-            {sortedAndFilteredTodos.length === 0 && (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                No tasks found
-              </div>
-            )}
-          </div>
-        )}
+              <Input
+                type="color"
+                value={newCategoryColor}
+                onChange={(e) => setNewCategoryColor(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleAddCategory}>Add Category</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
@@ -841,44 +833,44 @@ export const TodoList = () => {
                       initialFocus
                     />
                     {selectedDate && (
-                        <div className="mt-3 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm font-medium">Select Time</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2">
-                            {[9, 12, 15, 18].map(hour => {
-                              const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
-                              return (
-                                <Button
-                                  key={hour}
-                                  variant={selectedTime === timeValue ? 'default' : 'outline'}
-                                  className="text-xs py-1"
-                                  onClick={() => setSelectedTime(timeValue)}
-                                >
-                                  {format(setHours(selectedDate, hour), 'ha')}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="time"
-                              value={selectedTime}
-                              onChange={(e) => setSelectedTime(e.target.value)}
-                              className="flex-1"
-                            />
-                            {selectedTime && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm font-medium">Select Time</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[9, 12, 15, 18].map(hour => {
+                            const timeValue = format(setHours(selectedDate, hour), 'HH:mm');
+                            return (
                               <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedTime('')}
-                                className="text-red-500 hover:text-red-600"
+                                key={hour}
+                                variant={selectedTime === timeValue ? 'default' : 'outline'}
+                                className="text-xs py-1"
+                                onClick={() => setSelectedTime(timeValue)}
                               >
-                                <X className="h-4 w-4" />
+                                {format(setHours(selectedDate, hour), 'ha')}
                               </Button>
-                            )}
-                          </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="time"
+                            value={selectedTime}
+                            onChange={(e) => setSelectedTime(e.target.value)}
+                            className="flex-1"
+                          />
+                          {selectedTime && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedTime('')}
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -912,6 +904,54 @@ export const TodoList = () => {
             </Button>
           </div>
         </form>
+      </div>
+
+      <div className="space-y-6 mb-8">
+        <div className="flex justify-center gap-2 border-b pb-4">
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            onClick={() => setFilter('all')}
+            className="w-24"
+          >
+            All
+          </Button>
+          <Button
+            variant={filter === 'active' ? 'default' : 'outline'}
+            onClick={() => setFilter('active')}
+            className="w-24"
+          >
+            Active
+          </Button>
+          <Button
+            variant={filter === 'completed' ? 'default' : 'outline'}
+            onClick={() => setFilter('completed')}
+            className="w-24"
+          >
+            Completed
+          </Button>
+        </div>
+
+        {view === 'calendar' ? (
+          <CalendarView 
+            todos={sortedAndFilteredTodos} 
+            sortBy={sortBy}
+          />
+        ) : (
+          <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {sortedAndFilteredTodos.map(todo => (
+              <TodoItemComponent
+                key={todo.id}
+                todo={todo}
+                viewMode={view}
+              />
+            ))}
+            {sortedAndFilteredTodos.length === 0 && (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                No tasks found
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
