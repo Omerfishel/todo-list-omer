@@ -1,8 +1,9 @@
+<lov-code>
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
 import type { TodoItem } from '@/contexts/TodoContext';
-import { format, addHours, setHours, setMinutes } from 'date-fns';
+import { format, setHours, setMinutes } from 'date-fns';
 import { useSwipeable } from 'react-swipeable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +60,8 @@ interface TodoItemProps {
   viewMode: 'grid' | 'list';
 }
 
-const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
+// Separate TodoItemComponent into a named function component
+function TodoItemComponent({ todo, viewMode }: TodoItemProps) {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
@@ -580,9 +582,10 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
       </div>
     </>
   );
-};
+}
 
-export const TodoList = () => {
+// Main TodoList component as a named function component
+function TodoList() {
   const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
   const { signOut } = useAuth();
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -599,36 +602,6 @@ export const TodoList = () => {
   const [view, setView] = useState<'grid' | 'list' | 'calendar'>('grid');
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
-
-  const renderSortSelector = () => (
-    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Sort by" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="modified">Last Modified</SelectItem>
-        <SelectItem value="created">Creation Date</SelectItem>
-        <SelectItem value="reminder">Reminder Date</SelectItem>
-        <SelectItem value="urgency">Urgency</SelectItem>
-      </SelectContent>
-    </Select>
-  );
-
-  const getViewIcon = () => {
-    switch (view) {
-      case 'grid':
-        return <LayoutGrid className="h-4 w-4" />;
-      case 'list':
-        return <List className="h-4 w-4" />;
-      case 'calendar':
-        return <Calendar className="h-4 w-4" />;
-    }
-  };
-
-  const generateRandomPastelColor = () => {
-    const hue = Math.floor(Math.random() * 360);
-    return `hsl(${hue}, 70%, 90%)`;
-  };
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -708,6 +681,36 @@ export const TodoList = () => {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const renderSortSelector = () => (
+    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Sort by" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="modified">Last Modified</SelectItem>
+        <SelectItem value="created">Creation Date</SelectItem>
+        <SelectItem value="reminder">Reminder Date</SelectItem>
+        <SelectItem value="urgency">Urgency</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const getViewIcon = () => {
+    switch (view) {
+      case 'grid':
+        return <LayoutGrid className="h-4 w-4" />;
+      case 'list':
+        return <List className="h-4 w-4" />;
+      case 'calendar':
+        return <Calendar className="h-4 w-4" />;
+    }
+  };
+
+  const generateRandomPastelColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 90%)`;
   };
 
   return (
@@ -917,73 +920,4 @@ export const TodoList = () => {
         </Button>
         <Button
           variant={filter === 'active' ? 'default' : 'outline'}
-          onClick={() => setFilter('active')}
-            className="w-24"
-        >
-          Active
-        </Button>
-        <Button
-          variant={filter === 'completed' ? 'default' : 'outline'}
-          onClick={() => setFilter('completed')}
-            className="w-24"
-        >
-          Completed
-        </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2 justify-center">
-        {categories.map(category => (
-            <div key={category.id} className="flex items-center gap-1">
-              <div className="flex items-center">
-          <Button
-            variant={categoryFilter === category.id ? 'default' : 'outline'}
-            onClick={() => setCategoryFilter(prev => prev === category.id ? '' : category.id)}
-            className="flex items-center gap-2"
-          >
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: category.color }}
-            />
-            {category.name}
-                  <span className="hidden md:inline-block ml-2 hover:bg-red-100 hover:text-red-500 rounded-full p-1 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteCategory(category.id);
-                    }}
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteCategory(category.id)}
-                  className="md:hidden h-8 w-8 p-0 hover:bg-red-100 hover:text-red-500"
-                >
-                  <XIcon className="h-4 w-4" />
-          </Button>
-              </div>
-            </div>
-        ))}
-        </div>
-      </div>
-
-      {view === 'calendar' ? (
-        <CalendarView sortBy={sortBy} />
-      ) : (
-        <div className={view === 'grid' 
-          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          : "space-y-4"
-        }>
-          {sortedAndFilteredTodos.map((todo) => (
-            <TodoItemComponent 
-              key={todo.id} 
-              todo={todo} 
-              viewMode={view}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+          onClick={() => setFilter
