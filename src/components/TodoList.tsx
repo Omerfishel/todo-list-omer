@@ -107,14 +107,21 @@ export function TodoList() {
       const reminder = selectedDate && selectedTime
         ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
         : selectedDate;
-      addTodo(newTodoTitle.trim(), selectedCategory, newTodoContent, reminder, editLocation);
+      
+      addTodo(
+        newTodoTitle.trim(), 
+        selectedCategory, 
+        newTodoContent, 
+        reminder, 
+        editLocation
+      );
+      
       setNewTodoTitle('');
       setNewTodoContent('');
       setSelectedDate(undefined);
       setSelectedTime('');
       setEditLocation(null);
       
-      // Force reset the editor by temporarily unmounting it
       const editor = document.querySelector('.ProseMirror');
       if (editor) {
         editor.innerHTML = '';
@@ -838,7 +845,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                 variant="ghost"
                 size="icon"
                 onClick={() => setDeleteDialogOpen(true)}
-                className="text-red-500 hover:bg-red-50"
+                className="text-red-500 hover:bg-red-50 mr-2"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -851,6 +858,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                   onChange={(e) => setEditTitle(e.target.value)}
                   className="text-lg font-medium"
                 />
+
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex gap-2">
                     <Popover>
@@ -865,20 +873,11 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                           <CalendarComponent
                             mode="single"
                             selected={editReminder}
-                            onSelect={(date) => {
-                              if (date) {
-                                const time = selectedTime || '09:00';
-                                const newDate = new Date(`${format(date, 'yyyy-MM-dd')}T${time}`);
-                                setEditReminder(newDate);
-                              } else {
-                                setEditReminder(undefined);
-                                setSelectedTime('');
-                              }
-                            }}
+                            onSelect={setEditReminder}
                             initialFocus
                           />
                           {editReminder && (
-                            <div className="mt-3 space-y-2">
+                            <div className="mt-3">
                               <Input
                                 type="time"
                                 value={selectedTime}
@@ -890,14 +889,13 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                                     setEditReminder(newDate);
                                   }
                                 }}
-                                className="w-full"
                               />
                             </div>
                           )}
                         </div>
                       </PopoverContent>
                     </Popover>
-                    
+
                     <MapPicker
                       location={editLocation}
                       onLocationChange={setEditLocation}
@@ -929,14 +927,25 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                 </div>
               </div>
             ) : (
-              <div className="flex flex-1 items-center gap-4">
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleTodo(todo.id)}
+                  className={todo.completed ? 'text-green-500' : ''}
+                >
+                  {todo.completed ? (
+                    <Sparkles className="h-4 w-4 animate-scaleIn" />
+                  ) : (
+                    <Check className="h-4 w-4 opacity-30" />
+                  )}
+                </Button>
+
                 <div className="flex-1">
                   <h3 className={`font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
                     {todo.title}
                   </h3>
-                  <div className="mt-1">
-                    {renderCategories(false)}
-                  </div>
+                  {renderCategories(false)}
                   {todo.content && (
                     <div className="prose max-w-none mt-2 text-sm text-gray-600">
                       <div dangerouslySetInnerHTML={{ __html: todo.content }} />
@@ -948,7 +957,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                   {todo.reminder && (
                     <div className="text-xs text-gray-500 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {format(todo.reminder, 'MMM d, h:mm a')}
+                      {format(todo.reminder, 'PPp')}
                     </div>
                   )}
 
@@ -968,7 +977,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                     <Edit2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
+              </>
             )}
           </div>
         )}
