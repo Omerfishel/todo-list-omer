@@ -1,4 +1,3 @@
-<lov-code>
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -42,10 +41,10 @@ import {
 import { generateImageForTask } from '@/utils/imageGenerator';
 import '../styles/dust-effect.css';
 import { useAuth } from '@/contexts/AuthContext';
-import { X as XIcon } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { MapPicker } from './MapPicker';
 import { CalendarView } from './CalendarView';
+import { X as XIcon } from 'lucide-react';
 
 type SortOption = 'modified' | 'reminder' | 'urgency' | 'created';
 type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
@@ -61,7 +60,7 @@ interface TodoItemProps {
 }
 
 // Separate TodoItemComponent into a named function component
-function TodoItemComponent({ todo, viewMode }: TodoItemProps) {
+const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
@@ -585,7 +584,7 @@ function TodoItemComponent({ todo, viewMode }: TodoItemProps) {
 }
 
 // Main TodoList component as a named function component
-function TodoList() {
+export const TodoList = () => {
   const { todos, categories, addTodo, addCategory, deleteCategory } = useTodo();
   const { signOut } = useAuth();
   const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -920,4 +919,4 @@ function TodoList() {
         </Button>
         <Button
           variant={filter === 'active' ? 'default' : 'outline'}
-          onClick={() => setFilter
+          onClick={() =>
