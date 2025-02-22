@@ -460,12 +460,13 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
   const [taskImage, setTaskImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [dustEffect, setDustEffect] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(isDeleting);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
   const [editContent, setEditContent] = useState(todo.content || '');
   const [editReminder, setEditReminder] = useState<Date | undefined>(todo.reminder);
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(todo.location);
+  const [selectedTime, setSelectedTime] = useState(editReminder ? format(editReminder, 'HH:mm') : '');
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -831,7 +832,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center gap-4 w-full">
             {!isEditing && (
               <Button
                 variant="ghost"
@@ -850,7 +851,7 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                   onChange={(e) => setEditTitle(e.target.value)}
                   className="text-lg font-medium"
                 />
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="flex gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
@@ -864,29 +865,116 @@ function TodoItemComponent({ todo, viewMode }: { todo: TodoItemExtended; viewMod
                           <CalendarComponent
                             mode="single"
                             selected={editReminder}
-                            onSelect={setEditReminder}
+                            onSelect={(date) => {
+                              if (date) {
+                                const time = selectedTime || '09:00';
+                                const newDate = new Date(`${format(date, 'yyyy-MM-dd')}T${time}`);
+                                setEditReminder(newDate);
+                              } else {
+                                setEditReminder(undefined);
+                                setSelectedTime('');
+                              }
+                            }}
                             initialFocus
                           />
                           {editReminder && (
                             <div className="mt-3 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-gray-500" />
-                                <span className="text-sm font-medium">Select Time</span>
-                              </div>
-                              <div className="grid grid-cols-4 gap-2">
-                                {[9, 12, 15, 18].map(hour => {
-                                  const timeValue = format(setHours(editReminder, hour), 'HH:mm');
-                                  return (
-                                    <Button
-                                      key={hour}
-                                      variant={selectedTime === timeValue ? 'default' : 'outline'}
-                                      className="text-xs py-1"
-                                      onClick={() => setSelectedTime(timeValue)}
-                                    >
-                                      {format(setHours(editReminder, hour), 'ha')}
-                                    </Button>
-                                  );
-                                })}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Input
+                              <Input
+                                type="time"
+                                value={selectedTime}
+                                onChange={(e) => {
+                                  setSelectedTime(e.target.value);
+                                  if (e.target.value && editReminder) {
+                                    const [hours, minutes] = e.target.value.split(':').map(Number);
+                                    const newDate = setHours(setMinutes(editReminder, minutes), hours);
+                                    setEditReminder(newDate);
+                                  }
+                                }}
+                                className="w-full"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <MapPicker
+                      location={editLocation}
+                      onLocationChange={setEditLocation}
+                    />
+                  </div>
+                  {renderCategories(true)}
+                </div>
+
+                <RichTextEditor
+                  content={editContent}
+                  onChange={setEditContent}
+                />
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={handleDiscard}
+                    className="text-red-500"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handleSave}
+                    className="text-green-500"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center gap-4">
+                <div className="flex-1">
+                  <h3 className={`font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+                    {todo.title}
+                  </h3>
+                  <div className="mt-1">
+                    {renderCategories(false)}
+                  </div>
+                  {todo.content && (
+                    <div className="prose max-w-none mt-2 text-sm text-gray-600">
+                      <div dangerouslySetInnerHTML={{ __html: todo.content }} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {todo.reminder && (
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {format(todo.reminder, 'MMM d, h:mm a')}
+                    </div>
+                  )}
+
+                  {todo.location && (
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {todo.location.address}
+                    </div>
+                  )}
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsEditing(true)}
+                    className="text-blue-500 hover:bg-blue-50"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+export { TodoList };
