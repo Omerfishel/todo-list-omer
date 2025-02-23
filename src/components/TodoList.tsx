@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Check, Calendar, Clock, Search, Sparkles, Edit2, Save, LayoutGrid, List, MapPin, LogOut } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -600,36 +599,82 @@ export const TodoList = () => {
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
 
+  const renderCategoryTags = () => (
+    <div className="flex flex-wrap gap-2 mb-4">
+      <Button
+        variant={categoryFilter === '' ? 'default' : 'outline'}
+        onClick={() => setCategoryFilter('')}
+        size="sm"
+      >
+        All
+      </Button>
+      {categories.map(category => (
+        <Button
+          key={category.id}
+          variant={categoryFilter === category.id ? 'default' : 'outline'}
+          onClick={() => setCategoryFilter(category.id)}
+          size="sm"
+          className="flex items-center gap-2"
+          style={{
+            backgroundColor: categoryFilter === category.id ? category.color : undefined,
+            borderColor: category.color,
+            color: categoryFilter === category.id ? 'black' : undefined
+          }}
+        >
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: category.color }}
+          />
+          {category.name}
+        </Button>
+      ))}
+    </div>
+  );
+
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTodoTitle.trim()) {
-      const reminder = selectedDate && selectedTime
-        ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
-        : selectedDate;
-      
-      await addTodo(
-        newTodoTitle.trim(), 
-        selectedCategory, 
-        newTodoContent, 
-        reminder,
-        editLocation
-      );
-      
-      setNewTodoTitle('');
-      setNewTodoContent('');
-      setSelectedCategory('');
-      setSelectedDate(undefined);
-      setSelectedTime('');
-      setEditLocation(null);
+    try {
+      if (newTodoTitle.trim()) {
+        const reminder = selectedDate && selectedTime
+          ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
+          : selectedDate;
+        
+        await addTodo(
+          newTodoTitle.trim(), 
+          selectedCategory, 
+          newTodoContent, 
+          reminder,
+          editLocation
+        );
+        
+        setNewTodoTitle('');
+        setNewTodoContent('');
+        setSelectedCategory('');
+        setSelectedDate(undefined);
+        setSelectedTime('');
+        setEditLocation(null);
+        
+        const editor = document.querySelector('.ProseMirror');
+        if (editor) {
+          editor.innerHTML = '';
+        }
+      }
+    } catch (error) {
+      console.error('Error adding todo:', error);
     }
   };
 
   const handleAddCategory = async () => {
-    if (newCategoryName.trim()) {
-      await addCategory(newCategoryName.trim(), newCategoryColor);
-      setNewCategoryName('');
-      setNewCategoryColor('#E5DEFF');
-      setIsNewCategoryDialogOpen(false);
+    try {
+      if (newCategoryName.trim()) {
+        const color = newCategoryColor === '#E5DEFF' ? generateRandomPastelColor() : newCategoryColor;
+        await addCategory(newCategoryName.trim(), color);
+        setNewCategoryName('');
+        setNewCategoryColor('#E5DEFF');
+        setIsNewCategoryDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
     }
   };
 
@@ -736,7 +781,7 @@ export const TodoList = () => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 mb-8">
+      <div className="flex flex-wrap gap-4 mb-4">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -748,28 +793,6 @@ export const TodoList = () => {
           />
         </div>
         
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
-            {categories.map(category => (
-              <SelectItem
-                key={category.id}
-                value={category.id}
-                className="flex items-center gap-2"
-              >
-                <span
-                  className="w-3 h-3 rounded-full inline-block mr-2"
-                  style={{ backgroundColor: category.color }}
-                />
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {renderSortSelector()}
 
         <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
@@ -798,6 +821,8 @@ export const TodoList = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {renderCategoryTags()}
 
       <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
         <form onSubmit={handleAddTodo} className="space-y-4">
@@ -839,7 +864,7 @@ export const TodoList = () => {
             <div className="flex items-center gap-2">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" type="button">
                     <Calendar className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>

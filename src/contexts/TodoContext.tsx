@@ -22,8 +22,7 @@ interface TodoContextType {
     categoryId: string, 
     content?: string, 
     reminder?: Date, 
-    location?: { address: string; lat: number; lng: number; },
-    urgency?: 'low' | 'medium' | 'high' | 'urgent'
+    location?: { address: string; lat: number; lng: number; }
   ) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
@@ -45,7 +44,7 @@ interface TodoContextType {
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
-export function TodoProvider({ children }: { children: React.ReactNode }) {
+export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
@@ -86,8 +85,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     categoryId: string, 
     content?: string, 
     reminder?: Date, 
-    location?: { address: string; lat: number; lng: number; },
-    urgency: 'low' | 'medium' | 'high' | 'urgent' = 'medium'
+    location?: { address: string; lat: number; lng: number; }
   ) => {
     try {
       const newTodo = await todoApi.create({
@@ -97,22 +95,23 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
         category_ids: categoryId ? [categoryId] : [],
         reminder,
         location,
-        image_url: null,
-        urgency
+        image_url: undefined,
+        urgency: 'medium'
       });
 
       setTodos(prev => [{ ...newTodo, subItems: [] }, ...prev]);
       toast({
-        title: "Todo added",
-        description: "Your todo has been added successfully.",
+        title: "Task added",
+        description: "Your task has been added successfully.",
       });
     } catch (error) {
       console.error('Error adding todo:', error);
       toast({
         title: "Error",
-        description: "Failed to add todo.",
+        description: "Failed to add task. Please try again.",
         variant: "destructive",
       });
+      throw error; // Re-throw to handle in the component
     }
   };
 
@@ -121,8 +120,8 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       await todoApi.delete(id);
       setTodos(prev => prev.filter(todo => todo.id !== id));
       toast({
-        title: "Todo deleted",
-        description: "Your todo has been deleted successfully.",
+        title: "Task deleted",
+        description: "Your task has been deleted successfully.",
       });
     } catch (error) {
       console.error('Error deleting todo:', error);
@@ -241,6 +240,12 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Error adding category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add category. Please try again.",
+        variant: "destructive",
+      });
+      throw error; // Re-throw to handle in the component
     }
   };
 
