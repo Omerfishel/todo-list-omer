@@ -89,12 +89,11 @@ export const todoApi = {
       .from('todos')
       .insert([{
         title: todo.title,
-        content: todo.content,
-        completed: todo.completed || false,
+        content: todo.content || '',
+        completed: false,
         image_url: todo.image_url,
         reminder: todo.reminder,
         location: todo.location,
-        urgency: todo.urgency,
         creator_id: userData.user.id
       }])
       .select()

@@ -25,19 +25,23 @@ export function TodoForm({ onSubmit }: TodoFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim()) {
-      await addTodo(
-        title.trim(),
-        selectedCategory,
-        '',  // content
-        reminder,
-        location || undefined
-      );
-      setTitle('');
-      setSelectedCategory('');
-      setReminder(undefined);
-      setLocation(null);
-      onSubmit?.();
+    try {
+      if (title.trim()) {
+        await addTodo(
+          title.trim(),
+          selectedCategory,
+          '',  // content
+          reminder,
+          location || undefined
+        );
+        setTitle('');
+        setSelectedCategory('');
+        setReminder(undefined);
+        setLocation(null);
+        onSubmit?.();
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
     }
   };
 
@@ -60,7 +64,13 @@ export function TodoForm({ onSubmit }: TodoFormProps) {
           <SelectContent>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
-                {category.name}
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
+                </div>
               </SelectItem>
             ))}
           </SelectContent>

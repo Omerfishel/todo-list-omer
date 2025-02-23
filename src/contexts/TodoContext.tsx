@@ -90,13 +90,12 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const newTodo = await todoApi.create({
         title,
-        content,
+        content: content || '',
         completed: false,
         category_ids: categoryId ? [categoryId] : [],
         reminder,
         location,
-        image_url: undefined,
-        urgency: 'medium'
+        image_url: undefined
       });
 
       setTodos(prev => [{ ...newTodo, subItems: [] }, ...prev]);
@@ -111,7 +110,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Failed to add task. Please try again.",
         variant: "destructive",
       });
-      throw error; // Re-throw to handle in the component
+      throw error;
     }
   };
 
@@ -245,7 +244,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Failed to add category. Please try again.",
         variant: "destructive",
       });
-      throw error; // Re-throw to handle in the component
+      throw error;
     }
   };
 
