@@ -58,6 +58,17 @@ interface TodoItemProps {
   viewMode: 'grid' | 'list';
 }
 
+const PASTEL_COLORS = [
+  '#F2FCE2', // Soft Green
+  '#FEF7CD', // Soft Yellow
+  '#FEC6A1', // Soft Orange
+  '#E5DEFF', // Soft Purple
+  '#FFDEE2', // Soft Pink
+  '#FDE1D3', // Soft Peach
+  '#D3E4FD', // Soft Blue
+  '#F1F0FB'  // Soft Gray
+];
+
 const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -630,10 +641,20 @@ export const TodoList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryColor, setNewCategoryColor] = useState('#E5DEFF');
+  const [newCategoryColor, setNewCategoryColor] = useState(getRandomPastelColor());
   const [view, setView] = useState<'grid' | 'list' | 'calendar'>('grid');
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
+
+  const getRandomPastelColor = () => {
+    const randomIndex = Math.floor(Math.random() * PASTEL_COLORS.length);
+    return PASTEL_COLORS[randomIndex];
+  };
+
+  const handleOpenCategoryDialog = () => {
+    setNewCategoryColor(getRandomPastelColor());
+    setIsNewCategoryDialogOpen(true);
+  };
 
   const renderCategoryTags = () => (
     <div className="flex flex-wrap gap-2 mb-4">
@@ -645,12 +666,12 @@ export const TodoList = () => {
         All
       </Button>
       {categories.map(category => (
-        <div key={category.id} className="flex items-center">
+        <div key={category.id} className="relative flex items-center">
           <Button
             variant={categoryFilter === category.id ? 'default' : 'outline'}
             onClick={() => setCategoryFilter(category.id)}
             size="sm"
-            className="flex items-center gap-2 relative pr-8"
+            className="flex items-center gap-2 pr-8"
             style={{
               backgroundColor: categoryFilter === category.id ? category.color : undefined,
               borderColor: category.color,
@@ -662,17 +683,17 @@ export const TodoList = () => {
               style={{ backgroundColor: category.color }}
             />
             {category.name}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 bottom-0 hover:bg-red-100 p-1"
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteCategory(category.id);
-              }}
-            >
-              <X className="h-3 w-3 text-red-500" />
-            </Button>
+          </Button>
+          <Button 
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 h-6 w-6 rounded-full hover:bg-red-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteCategory(category.id);
+            }}
+          >
+            <X className="h-3 w-3 text-red-500" />
           </Button>
         </div>
       ))}
@@ -793,11 +814,6 @@ export const TodoList = () => {
     }
   };
 
-  const generateRandomPastelColor = () => {
-    const hue = Math.floor(Math.random() * 360);
-    return `hsl(${hue}, 70%, 90%)`;
-  };
-
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
       <div className="flex items-center justify-between mb-8">
@@ -845,7 +861,7 @@ export const TodoList = () => {
 
         <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline">Add Category</Button>
+            <Button variant="outline" onClick={handleOpenCategoryDialog}>Add Category</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
