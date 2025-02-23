@@ -231,7 +231,6 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
       editLocation,
       editTitle
     );
-    updateTodoCategories(todo.id, todo.category_ids || []);
     setIsEditing(false);
   };
 
@@ -386,6 +385,43 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
                     {renderCategories(true)}
                   </div>
                   <div className="mb-3 flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon" type="button">
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editReminder}
+                            onSelect={setEditReminder}
+                            initialFocus
+                          />
+                          {editReminder && (
+                            <div className="mt-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <span className="text-sm font-medium">Select Time</span>
+                              </div>
+                              <Input
+                                type="time"
+                                value={selectedTime}
+                                onChange={(e) => {
+                                  setSelectedTime(e.target.value);
+                                  if (e.target.value && editReminder) {
+                                    const [hours, minutes] = e.target.value.split(':').map(Number);
+                                    const newDate = setHours(setMinutes(editReminder, minutes), hours);
+                                    setEditReminder(newDate);
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <MapPicker
                       location={editLocation}
                       onLocationChange={setEditLocation}
@@ -609,24 +645,36 @@ export const TodoList = () => {
         All
       </Button>
       {categories.map(category => (
-        <Button
-          key={category.id}
-          variant={categoryFilter === category.id ? 'default' : 'outline'}
-          onClick={() => setCategoryFilter(category.id)}
-          size="sm"
-          className="flex items-center gap-2"
-          style={{
-            backgroundColor: categoryFilter === category.id ? category.color : undefined,
-            borderColor: category.color,
-            color: categoryFilter === category.id ? 'black' : undefined
-          }}
-        >
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: category.color }}
-          />
-          {category.name}
-        </Button>
+        <div key={category.id} className="flex items-center">
+          <Button
+            variant={categoryFilter === category.id ? 'default' : 'outline'}
+            onClick={() => setCategoryFilter(category.id)}
+            size="sm"
+            className="flex items-center gap-2 relative pr-8"
+            style={{
+              backgroundColor: categoryFilter === category.id ? category.color : undefined,
+              borderColor: category.color,
+              color: categoryFilter === category.id ? 'black' : undefined
+            }}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
+            {category.name}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 bottom-0 hover:bg-red-100 p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteCategory(category.id);
+              }}
+            >
+              <X className="h-3 w-3 text-red-500" />
+            </Button>
+          </Button>
+        </div>
       ))}
     </div>
   );

@@ -132,63 +132,66 @@ export const todoApi = {
   },
 
   update: async (id: string, todo: Partial<Todo>) => {
-    const updates: any = {};
-    if (todo.title !== undefined) updates.title = todo.title;
-    if (todo.content !== undefined) updates.content = todo.content;
-    if (todo.completed !== undefined) updates.completed = todo.completed;
-    if (todo.image_url !== undefined) updates.image_url = todo.image_url;
-    if (todo.reminder !== undefined) updates.reminder = todo.reminder;
-    if (todo.location !== undefined) updates.location = todo.location;
-    if (todo.urgency !== undefined) updates.urgency = todo.urgency;
+    try {
+      const { data, error } = await supabase
+        .from('todos')
+        .update({
+          title: todo.title,
+          content: todo.content,
+          completed: todo.completed,
+          image_url: todo.image_url,
+          reminder: todo.reminder,
+          location: todo.location
+        })
+        .eq('id', id)
+        .select()
+        .single();
 
-    const { data, error } = await supabase
-      .from('todos')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating todo:', error);
-      throw error;
-    }
-
-    if (!data) {
-      throw new Error('No data returned from todo update');
-    }
-
-    if (todo.category_ids !== undefined) {
-      const { error: deleteError } = await supabase
-        .from('todo_categories')
-        .delete()
-        .eq('todo_id', id);
-
-      if (deleteError) {
-        console.error('Error deleting category associations:', deleteError);
-        throw deleteError;
+      if (error) {
+        console.error('Error updating todo:', error);
+        throw error;
       }
 
-      if (todo.category_ids.length > 0) {
-        const categoryAssociations = todo.category_ids.map(categoryId => ({
-          todo_id: id,
-          category_id: categoryId
-        }));
+      if (!data) {
+        throw new Error('No data returned from todo update');
+      }
 
-        const { error: categoryError } = await supabase
+      if (todo.category_ids !== undefined) {
+        const { error: deleteError } = await supabase
           .from('todo_categories')
-          .insert(categoryAssociations);
+          .delete()
+          .eq('todo_id', id);
 
-        if (categoryError) {
-          console.error('Error creating category associations:', categoryError);
-          throw categoryError;
+        if (deleteError) {
+          console.error('Error deleting category associations:', deleteError);
+          throw deleteError;
+        }
+
+        if (todo.category_ids.length > 0) {
+          const categoryAssociations = todo.category_ids.map(categoryId => ({
+            todo_id: id,
+            category_id: categoryId
+          }));
+
+          const { error: insertError } = await supabase
+            .from('todo_categories')
+            .insert(categoryAssociations);
+
+          if (insertError) {
+            console.error('Error creating category associations:', insertError);
+            throw insertError;
+          }
         }
       }
-    }
 
-    return {
-      ...data,
-      category_ids: todo.category_ids || []
-    };
+      return {
+        ...data,
+        category_ids: todo.category_ids || []
+      };
+    } catch (error) {
+      console.error('Error in update operation:', error);
+      throw error;
+    }
   },
 
   delete: async (id: string) => {
