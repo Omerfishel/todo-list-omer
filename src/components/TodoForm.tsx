@@ -20,7 +20,6 @@ export function TodoForm({ onSubmit }: TodoFormProps) {
   const [title, setTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [reminder, setReminder] = useState<Date>();
-  const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [location, setLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const { addTodo, categories } = useTodo();
 
@@ -30,16 +29,14 @@ export function TodoForm({ onSubmit }: TodoFormProps) {
       await addTodo(
         title.trim(),
         selectedCategory,
-        '',
+        '',  // content
         reminder,
-        location || undefined,
-        urgency
+        location || undefined
       );
       setTitle('');
       setSelectedCategory('');
       setReminder(undefined);
       setLocation(null);
-      setUrgency('medium');
       onSubmit?.();
     }
   };
@@ -54,17 +51,6 @@ export function TodoForm({ onSubmit }: TodoFormProps) {
           placeholder="What needs to be done?"
           className="flex-1"
         />
-        <Select value={urgency} onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setUrgency(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select urgency" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="low">Low Priority</SelectItem>
-            <SelectItem value="medium">Medium Priority</SelectItem>
-            <SelectItem value="high">High Priority</SelectItem>
-            <SelectItem value="urgent">Urgent</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       <div className="flex flex-wrap gap-4 items-center">
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
