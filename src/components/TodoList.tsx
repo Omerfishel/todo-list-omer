@@ -600,38 +600,33 @@ export const TodoList = () => {
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
 
-  const handleAddTodo = (e: React.FormEvent) => {
+  const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodoTitle.trim()) {
       const reminder = selectedDate && selectedTime
         ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
         : selectedDate;
       
-      addTodo(
+      await addTodo(
         newTodoTitle.trim(), 
         selectedCategory, 
         newTodoContent, 
-        reminder, 
+        reminder,
         editLocation
       );
       
       setNewTodoTitle('');
       setNewTodoContent('');
+      setSelectedCategory('');
       setSelectedDate(undefined);
       setSelectedTime('');
       setEditLocation(null);
-      
-      const editor = document.querySelector('.ProseMirror');
-      if (editor) {
-        editor.innerHTML = '';
-      }
     }
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
-      const color = newCategoryColor === '#E5DEFF' ? generateRandomPastelColor() : newCategoryColor;
-      addCategory(newCategoryName.trim(), color);
+      await addCategory(newCategoryName.trim(), newCategoryColor);
       setNewCategoryName('');
       setNewCategoryColor('#E5DEFF');
       setIsNewCategoryDialogOpen(false);
@@ -732,7 +727,7 @@ export const TodoList = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={handleLogout}
+            onClick={signOut}
             className="flex items-center gap-2"
           >
             <LogOut className="h-4 w-4" />
@@ -741,8 +736,8 @@ export const TodoList = () => {
         </div>
       </div>
 
-      <div className="flex gap-4 mb-8">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap gap-4 mb-8">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             type="text"
@@ -752,7 +747,31 @@ export const TodoList = () => {
             className="pl-10"
           />
         </div>
+        
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Categories</SelectItem>
+            {categories.map(category => (
+              <SelectItem
+                key={category.id}
+                value={category.id}
+                className="flex items-center gap-2"
+              >
+                <span
+                  className="w-3 h-3 rounded-full inline-block mr-2"
+                  style={{ backgroundColor: category.color }}
+                />
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {renderSortSelector()}
+
         <Dialog open={isNewCategoryDialogOpen} onOpenChange={setIsNewCategoryDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline">Add Category</Button>
@@ -795,7 +814,7 @@ export const TodoList = () => {
             onChange={setNewTodoContent}
           />
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select category" />
@@ -844,6 +863,7 @@ export const TodoList = () => {
                             return (
                               <Button
                                 key={hour}
+                                type="button"
                                 variant={selectedTime === timeValue ? 'default' : 'outline'}
                                 className="text-xs py-1"
                                 onClick={() => setSelectedTime(timeValue)}
@@ -862,6 +882,7 @@ export const TodoList = () => {
                           />
                           {selectedTime && (
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => setSelectedTime('')}
