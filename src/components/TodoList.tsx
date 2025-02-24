@@ -48,7 +48,16 @@ export function TodoList() {
   });
 
   const createTodoMutation = useMutation({
-    mutationFn: (newTodo: { title: string }) => todoApi.create(newTodo),
+    mutationFn: (newTodo: { title: string }) => todoApi.create({
+      title: newTodo.title,
+      completed: false,
+      content: '',
+      urgency: 'low',
+      category_ids: [],
+      image_url: undefined,
+      reminder: undefined,
+      location: undefined
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       setNewTodo('');
