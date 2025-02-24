@@ -3,7 +3,8 @@
 declare global {
   interface Window {
     google: typeof google;
-    googleMapsLoaded: boolean;
-    initMap: () => void;
+    googleMapsLoaded?: boolean;
   }
-} 
+}
+
+export {}; 

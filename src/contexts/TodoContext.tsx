@@ -4,9 +4,10 @@ import type { Todo, Category } from '@/services/api';
 import { useToast } from "@/hooks/use-toast";
 import { setupDefaultCategories } from '@/lib/setupDefaults';
 
+export type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
+
 export interface TodoItem extends Todo {
   description?: string;
-  urgency?: 'low' | 'medium' | 'high' | 'urgent';
   subItems?: Array<{
     id: string;
     title: string;
@@ -22,7 +23,8 @@ interface TodoContextType {
     categoryId: string, 
     content?: string, 
     reminder?: Date, 
-    location?: { address: string; lat: number; lng: number; }
+    location?: { address: string; lat: number; lng: number; },
+    urgency?: UrgencyLevel
   ) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
@@ -31,7 +33,8 @@ interface TodoContextType {
     content: string, 
     reminder?: Date, 
     location?: { address: string; lat: number; lng: number; } | null,
-    title?: string
+    title?: string,
+    urgency?: UrgencyLevel
   ) => Promise<void>;
   updateTodoCategories: (id: string, categoryIds: string[]) => Promise<void>;
   addCategory: (name: string, color: string) => Promise<void>;
@@ -85,7 +88,8 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
     categoryId: string, 
     content?: string, 
     reminder?: Date, 
-    location?: { address: string; lat: number; lng: number; }
+    location?: { address: string; lat: number; lng: number; },
+    urgency: UrgencyLevel = 'low'
   ) => {
     try {
       const newTodo = await todoApi.create({
@@ -95,6 +99,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         category_ids: categoryId ? [categoryId] : [],
         reminder,
         location,
+        urgency,
         image_url: undefined
       });
 
@@ -157,7 +162,8 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
     content: string, 
     reminder?: Date, 
     location?: { address: string; lat: number; lng: number; } | null,
-    title?: string
+    title?: string,
+    urgency?: UrgencyLevel
   ) => {
     try {
       const todo = todos.find(t => t.id === id);
@@ -168,7 +174,8 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         title: title || todo.title,
         content,
         reminder,
-        location
+        location,
+        urgency: urgency || todo.urgency || 'low'
       });
 
       setTodos(prev => prev.map(t => 
@@ -179,6 +186,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
           content: updatedTodo.content,
           reminder: updatedTodo.reminder,
           location: updatedTodo.location,
+          urgency: updatedTodo.urgency,
           subItems: t.subItems 
         } : t
       ));

@@ -49,7 +49,6 @@ type SortOption = 'modified' | 'reminder' | 'urgency' | 'created';
 type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
 
 interface TodoItemExtended extends TodoItem {
-  urgency?: UrgencyLevel;
   description?: string;
 }
 
@@ -69,6 +68,11 @@ const PASTEL_COLORS = [
   '#F1F0FB'  // Soft Gray
 ];
 
+const getRandomPastelColor = () => {
+  const randomIndex = Math.floor(Math.random() * PASTEL_COLORS.length);
+  return PASTEL_COLORS[randomIndex];
+};
+
 const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   const { toggleTodo, deleteTodo, categories, updateTodoContent, updateTodoCategories } = useTodo();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -83,6 +87,7 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
   const [editContent, setEditContent] = useState(todo.content || '');
   const [editReminder, setEditReminder] = useState<Date | undefined>(todo.reminder);
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(todo.location);
+  const [editUrgency, setEditUrgency] = useState<UrgencyLevel>(todo.urgency || 'low');
   const [selectedTime, setSelectedTime] = useState(editReminder ? format(editReminder, 'HH:mm') : '');
   const { user } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -240,7 +245,8 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
       editContent,
       editReminder,
       editLocation,
-      editTitle
+      editTitle,
+      editUrgency
     );
     setIsEditing(false);
   };
@@ -250,6 +256,7 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
     setEditContent(todo.content || '');
     setEditReminder(todo.reminder);
     setEditLocation(todo.location);
+    setEditUrgency(todo.urgency || 'low');
     setIsEditing(false);
   };
 
@@ -437,6 +444,29 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
                       location={editLocation}
                       onLocationChange={setEditLocation}
                     />
+                    <Select value={editUrgency} onValueChange={(value: UrgencyLevel) => setEditUrgency(value)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Set urgency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low" className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-500" />
+                          Low
+                        </SelectItem>
+                        <SelectItem value="medium" className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                          Medium
+                        </SelectItem>
+                        <SelectItem value="high" className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-500" />
+                          High
+                        </SelectItem>
+                        <SelectItem value="urgent" className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          Urgent
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                     {editLocation && (
                       <div className="text-sm text-gray-500 flex-1">
                         <MapPin className="h-4 w-4 inline mr-1" />
@@ -456,8 +486,9 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
                   <h3 className={`text-lg font-medium mb-3 ${todo.completed ? 'line-through text-gray-400' : ''}`}>
                     {todo.title}
                   </h3>
-                  <div className="mb-3">
+                  <div className="mb-3 flex items-center gap-2">
                     {renderCategories(false)}
+                    {renderUrgencyBadge()}
                   </div>
                   <div className="prose max-w-none flex-1">
                     <div dangerouslySetInnerHTML={{ __html: todo.content || '' }} />
@@ -546,6 +577,32 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
                   {renderCategories(true)}
                 </div>
 
+                <div className="flex items-center gap-2 mb-4">
+                  <Select value={editUrgency} onValueChange={(value: UrgencyLevel) => setEditUrgency(value)}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Set urgency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low" className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        Low
+                      </SelectItem>
+                      <SelectItem value="medium" className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        Medium
+                      </SelectItem>
+                      <SelectItem value="high" className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        High
+                      </SelectItem>
+                      <SelectItem value="urgent" className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        Urgent
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <RichTextEditor
                   content={editContent}
                   onChange={setEditContent}
@@ -587,7 +644,10 @@ const TodoItemComponent = ({ todo, viewMode }: TodoItemProps) => {
                   <h3 className={`font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
                     {todo.title}
                   </h3>
-                  {renderCategories(false)}
+                  <div className="mb-3 flex items-center gap-2">
+                    {renderCategories(false)}
+                    {renderUrgencyBadge()}
+                  </div>
                   {todo.content && (
                     <div className="prose max-w-none mt-2 text-sm text-gray-600">
                       <div dangerouslySetInnerHTML={{ __html: todo.content }} />
@@ -636,7 +696,8 @@ export const TodoList = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [selectedUrgency, setSelectedUrgency] = useState<UrgencyLevel>('low');
+  const [filter, setFilter] = useState('active');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewCategoryDialogOpen, setIsNewCategoryDialogOpen] = useState(false);
@@ -645,11 +706,6 @@ export const TodoList = () => {
   const [view, setView] = useState<'grid' | 'list' | 'calendar'>('grid');
   const [editLocation, setEditLocation] = useState<{ address: string; lat: number; lng: number; } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
-
-  const getRandomPastelColor = () => {
-    const randomIndex = Math.floor(Math.random() * PASTEL_COLORS.length);
-    return PASTEL_COLORS[randomIndex];
-  };
 
   const handleOpenCategoryDialog = () => {
     setNewCategoryColor(getRandomPastelColor());
@@ -666,15 +722,15 @@ export const TodoList = () => {
         All
       </Button>
       {categories.map(category => (
-        <div key={category.id} className="relative flex items-center">
+        <div key={category.id} className="flex items-center gap-1">
           <Button
             variant={categoryFilter === category.id ? 'default' : 'outline'}
             onClick={() => setCategoryFilter(category.id)}
             size="sm"
-            className="flex items-center gap-2 pr-8"
+            className="flex items-center gap-2"
             style={{
               backgroundColor: categoryFilter === category.id ? category.color : undefined,
-              borderColor: category.color,
+              borderColor: 'white',
               color: categoryFilter === category.id ? 'black' : undefined
             }}
           >
@@ -687,7 +743,7 @@ export const TodoList = () => {
           <Button 
             variant="ghost"
             size="icon"
-            className="absolute right-0 h-6 w-6 rounded-full hover:bg-red-100"
+            className="h-7 w-7 rounded-full hover:bg-red-100 flex-shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               deleteCategory(category.id);
@@ -703,30 +759,32 @@ export const TodoList = () => {
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (newTodoTitle.trim()) {
-        const reminder = selectedDate && selectedTime
-          ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
-          : selectedDate;
+    if (newTodoTitle.trim()) {
+      const reminder = selectedDate && selectedTime
+        ? new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`)
+        : selectedDate;
         
         await addTodo(
           newTodoTitle.trim(), 
           selectedCategory, 
           newTodoContent, 
           reminder,
-          editLocation
+          editLocation,
+          selectedUrgency
         );
         
-        setNewTodoTitle('');
+      setNewTodoTitle('');
         setNewTodoContent('');
         setSelectedCategory('');
-        setSelectedDate(undefined);
-        setSelectedTime('');
+      setSelectedDate(undefined);
+      setSelectedTime('');
         setEditLocation(null);
-        
-        const editor = document.querySelector('.ProseMirror');
-        if (editor) {
-          editor.innerHTML = '';
-        }
+        setSelectedUrgency('low');
+      
+      const editor = document.querySelector('.ProseMirror');
+      if (editor) {
+        editor.innerHTML = '';
+      }
       }
     } catch (error) {
       console.error('Error adding todo:', error);
@@ -735,13 +793,13 @@ export const TodoList = () => {
 
   const handleAddCategory = async () => {
     try {
-      if (newCategoryName.trim()) {
-        const color = newCategoryColor === '#E5DEFF' ? generateRandomPastelColor() : newCategoryColor;
+    if (newCategoryName.trim()) {
+        const color = newCategoryColor === '#E5DEFF' ? getRandomPastelColor() : newCategoryColor;
         await addCategory(newCategoryName.trim(), color);
-        setNewCategoryName('');
-        setNewCategoryColor('#E5DEFF');
-        setIsNewCategoryDialogOpen(false);
-      }
+      setNewCategoryName('');
+      setNewCategoryColor('#E5DEFF');
+      setIsNewCategoryDialogOpen(false);
+    }
     } catch (error) {
       console.error('Error adding category:', error);
     }
@@ -753,7 +811,7 @@ export const TodoList = () => {
         case 'reminder':
           if (!a.reminder) return 1;
           if (!b.reminder) return -1;
-          return new Date(b.reminder).getTime() - new Date(a.reminder).getTime();
+          return new Date(a.reminder).getTime() - new Date(b.reminder).getTime();
         case 'urgency':
           const urgencyOrder = { urgent: 3, high: 2, medium: 1, low: 0 };
           return (urgencyOrder[b.urgency || 'low'] || 0) - (urgencyOrder[a.urgency || 'low'] || 0);
@@ -886,8 +944,6 @@ export const TodoList = () => {
         </Dialog>
       </div>
 
-      {renderCategoryTags()}
-
       <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
         <form onSubmit={handleAddTodo} className="space-y-4">
           <Input
@@ -925,22 +981,46 @@ export const TodoList = () => {
               </SelectContent>
             </Select>
 
+            <Select value={selectedUrgency} onValueChange={(value: UrgencyLevel) => setSelectedUrgency(value)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Set urgency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Low
+                </SelectItem>
+                <SelectItem value="medium" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                  Medium
+                </SelectItem>
+                <SelectItem value="high" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  High
+                </SelectItem>
+                <SelectItem value="urgent" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Urgent
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
             <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
+            <Popover>
+              <PopoverTrigger asChild>
                   <Button variant="outline" size="icon" type="button">
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <div className="p-3">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      initialFocus
-                    />
-                    {selectedDate && (
+                <div className="p-3">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                  />
+                  {selectedDate && (
                       <div className="mt-3 space-y-2">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-gray-500" />
@@ -963,10 +1043,10 @@ export const TodoList = () => {
                           })}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            value={selectedTime}
-                            onChange={(e) => setSelectedTime(e.target.value)}
+                      <Input
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
                             className="flex-1"
                           />
                           {selectedTime && (
@@ -981,11 +1061,11 @@ export const TodoList = () => {
                             </Button>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
               
               <MapPicker
                 location={editLocation}
@@ -1018,28 +1098,30 @@ export const TodoList = () => {
 
       <div className="space-y-6 mb-8">
         <div className="flex justify-center gap-2 border-b pb-4">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilter('all')}
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
             className="w-24"
-          >
-            All
-          </Button>
-          <Button
-            variant={filter === 'active' ? 'default' : 'outline'}
-            onClick={() => setFilter('active')}
+        >
+          All
+        </Button>
+        <Button
+          variant={filter === 'active' ? 'default' : 'outline'}
+          onClick={() => setFilter('active')}
             className="w-24"
-          >
-            Active
-          </Button>
-          <Button
-            variant={filter === 'completed' ? 'default' : 'outline'}
-            onClick={() => setFilter('completed')}
+        >
+          Active
+        </Button>
+        <Button
+          variant={filter === 'completed' ? 'default' : 'outline'}
+          onClick={() => setFilter('completed')}
             className="w-24"
           >
             Completed
           </Button>
         </div>
+
+        {renderCategoryTags()}
 
         {view === 'calendar' ? (
           <CalendarView 
@@ -1058,11 +1140,11 @@ export const TodoList = () => {
             {sortedAndFilteredTodos.length === 0 && (
               <div className="col-span-full text-center py-8 text-gray-500">
                 No tasks found
-              </div>
-            )}
           </div>
-        )}
+            )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
   );
 };

@@ -19,9 +19,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Calendar as CalendarIcon, MapPin } from 'lucide-react';
+import type { UrgencyLevel } from '@/contexts/TodoContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { MapPicker } from './MapPicker';
 
 interface TodoItemExtended extends TodoItem {
-  urgency?: 'low' | 'medium' | 'high' | 'urgent';
   description?: string;
 }
 
@@ -37,8 +46,26 @@ export function CalendarView({ sortBy, todos }: CalendarViewProps) {
   const [editTitle, setEditTitle] = React.useState('');
   const [editContent, setEditContent] = React.useState('');
   const [editReminder, setEditReminder] = React.useState<Date | undefined>();
+  const [editLocation, setEditLocation] = React.useState<{ address: string; lat: number; lng: number; } | null>(null);
+  const [editUrgency, setEditUrgency] = React.useState<UrgencyLevel>('low');
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [todoToDelete, setTodoToDelete] = React.useState<string | null>(null);
+
+  const getUrgencyColor = (level: UrgencyLevel = 'low') => {
+    switch (level) {
+      case 'urgent': return 'bg-red-100 text-red-700';
+      case 'high': return 'bg-orange-100 text-orange-700';
+      case 'medium': return 'bg-yellow-100 text-yellow-700';
+      case 'low': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const renderUrgencyBadge = (urgency: UrgencyLevel) => (
+    <div className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(urgency)}`}>
+      {urgency}
+    </div>
+  );
 
   const todosByDate = React.useMemo(() => {
     const grouped = todos.reduce((acc, todo) => {
@@ -56,7 +83,7 @@ export function CalendarView({ sortBy, todos }: CalendarViewProps) {
       grouped[date].sort((a, b) => {
         switch (sortBy) {
           case 'reminder':
-            return new Date(b.reminder!).getTime() - new Date(a.reminder!).getTime();
+            return new Date(a.reminder!).getTime() - new Date(b.reminder!).getTime();
           case 'urgency':
             const urgencyOrder = { urgent: 3, high: 2, medium: 1, low: 0 };
             return (urgencyOrder[b.urgency || 'low'] || 0) - (urgencyOrder[a.urgency || 'low'] || 0);
@@ -83,8 +110,9 @@ export function CalendarView({ sortBy, todos }: CalendarViewProps) {
       todoId,
       editContent,
       editReminder,
-      null,
-      editTitle
+      editLocation,
+      editTitle,
+      editUrgency
     );
     setEditingTodoId(null);
   };
@@ -116,11 +144,40 @@ export function CalendarView({ sortBy, todos }: CalendarViewProps) {
             content={editContent}
             onChange={setEditContent}
           />
-          <Input
-            type="datetime-local"
-            value={editReminder ? format(editReminder, "yyyy-MM-dd'T'HH:mm") : ''}
-            onChange={(e) => setEditReminder(e.target.value ? new Date(e.target.value) : undefined)}
-          />
+          <div className="flex flex-wrap gap-4 items-center">
+            <Input
+              type="datetime-local"
+              value={editReminder ? format(editReminder, "yyyy-MM-dd'T'HH:mm") : ''}
+              onChange={(e) => setEditReminder(e.target.value ? new Date(e.target.value) : undefined)}
+            />
+            <Select value={editUrgency} onValueChange={(value: UrgencyLevel) => setEditUrgency(value)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Set urgency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Low
+                </SelectItem>
+                <SelectItem value="medium" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                  Medium
+                </SelectItem>
+                <SelectItem value="high" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  High
+                </SelectItem>
+                <SelectItem value="urgent" className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Urgent
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <MapPicker
+              location={editLocation}
+              onLocationChange={setEditLocation}
+            />
+          </div>
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
@@ -146,13 +203,22 @@ export function CalendarView({ sortBy, todos }: CalendarViewProps) {
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h4 className={`font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
-              {todo.title}
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className={`font-medium ${todo.completed ? 'line-through text-gray-400' : ''}`}>
+                {todo.title}
+              </h4>
+              {renderUrgencyBadge(todo.urgency || 'low')}
+            </div>
             {todo.reminder && (
               <div className="flex items-center text-sm text-gray-500 mt-1">
                 <Clock className="w-4 h-4 mr-1" />
                 {format(new Date(todo.reminder), 'h:mm a')}
+              </div>
+            )}
+            {todo.location && (
+              <div className="flex items-center text-sm text-gray-500 mt-1">
+                <MapPin className="w-4 h-4 mr-1" />
+                {todo.location.address}
               </div>
             )}
             {todo.content && (
@@ -188,6 +254,8 @@ export function CalendarView({ sortBy, todos }: CalendarViewProps) {
                 setEditTitle(todo.title);
                 setEditContent(todo.content || '');
                 setEditReminder(todo.reminder);
+                setEditLocation(todo.location);
+                setEditUrgency(todo.urgency || 'low');
               }}
             >
               <Edit2 className="h-4 w-4" />

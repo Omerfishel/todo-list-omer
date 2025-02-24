@@ -48,6 +48,7 @@ CREATE TABLE todos (
     image_url TEXT,
     reminder TIMESTAMP WITH TIME ZONE,
     location JSONB,
+    urgency VARCHAR(10) NOT NULL DEFAULT 'low' CHECK (urgency IN ('low', 'medium', 'high', 'urgent')),
     creator_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

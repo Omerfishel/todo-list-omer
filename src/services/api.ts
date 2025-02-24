@@ -12,7 +12,7 @@ export interface Todo {
     lat: number;
     lng: number;
   };
-  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+  urgency: 'low' | 'medium' | 'high' | 'urgent';
   category_ids: string[];
   creator_id: string;
   created_at: Date;
@@ -94,6 +94,7 @@ export const todoApi = {
         image_url: todo.image_url,
         reminder: todo.reminder,
         location: todo.location,
+        urgency: todo.urgency || 'low',
         creator_id: userData.user.id
       }])
       .select()
@@ -141,7 +142,8 @@ export const todoApi = {
           completed: todo.completed,
           image_url: todo.image_url,
           reminder: todo.reminder,
-          location: todo.location
+          location: todo.location,
+          urgency: todo.urgency || 'low'
         })
         .eq('id', id)
         .select()
