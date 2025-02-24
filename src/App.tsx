@@ -38,25 +38,31 @@ function AuthenticatedApp() {
   );
 }
 
-function App() {
+function AppRoutes() {
   const { user } = useAuth();
 
   return (
+    <Routes>
+      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+      <Route path="/auth/signin" element={<SignIn />} />
+      <Route path="/auth/signup" element={<SignUp />} />
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <AuthenticatedApp />
+          </PrivateRoute>
+        }
+      />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
     <AuthProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-          <Route path="/auth/signin" element={<SignIn />} />
-          <Route path="/auth/signup" element={<SignUp />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <AuthenticatedApp />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
+        <AppRoutes />
         <Toaster />
       </Router>
     </AuthProvider>
