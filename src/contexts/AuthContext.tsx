@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -59,6 +60,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(data);
   };
 
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
+    } catch (error) {
+      const e = error as AuthError;
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const signUp = async (email: string, password: string, username: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -80,30 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: "Please check your email to verify your account.",
         });
       }
-    } catch (error) {
-      const e = error as AuthError;
-      toast({
-        title: "Error",
-        description: e.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
     } catch (error) {
       const e = error as AuthError;
       toast({
