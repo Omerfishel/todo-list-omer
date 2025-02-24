@@ -1,10 +1,33 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, Globe, Rocket, Shield } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage = () => {
+  useEffect(() => {
+    const observerCallback: IntersectionObserverCallback = (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fadeIn', 'opacity-100');
+          entry.target.classList.remove('opacity-0', 'translate-y-10');
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, {
+      threshold: 0.1
+    });
+
+    document.querySelectorAll('.animate-on-scroll').forEach(element => {
+      element.classList.add('opacity-0', 'translate-y-10', 'transition-all', 'duration-700');
+      observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20">
       {/* Navbar */}
@@ -29,9 +52,9 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 animate-on-scroll">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-8 animate-fadeIn">
+          <div className="text-center space-y-8">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
               Organize Your Life with TaskMaster
             </h1>
@@ -73,8 +96,7 @@ const LandingPage = () => {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="p-6 rounded-2xl bg-card border hover:shadow-lg transition-all duration-300 animate-fadeIn"
-                style={{ animationDelay: `${index * 150}ms` }}
+                className="animate-on-scroll p-6 rounded-2xl bg-card border hover:shadow-lg transition-all duration-300"
               >
                 <div className="space-y-4">
                   {feature.icon}
@@ -87,37 +109,39 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="space-y-12">
-            <h2 className="text-3xl font-bold text-center">Why Choose TaskMaster?</h2>
-            <div className="grid gap-6 max-w-2xl mx-auto">
-              {[
-                "Smart task categorization",
-                "Location-based reminders",
-                "Calendar integration",
-                "Collaborative features",
-                "Real-time updates",
-                "Beautiful interface",
-              ].map((benefit, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-4 rounded-lg bg-card/50 animate-fadeIn"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                  <span>{benefit}</span>
-                </div>
-              ))}
-            </div>
+      {/* Benefits Section - Made more engaging and full-width */}
+      <section className="py-20 w-full bg-gradient-to-r from-primary/5 to-purple-600/5">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold text-center mb-16 animate-on-scroll">
+            Why Choose TaskMaster?
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              "Smart task categorization",
+              "Location-based reminders",
+              "Calendar integration",
+              "Collaborative features",
+              "Real-time updates",
+              "Beautiful interface",
+              "Custom notifications",
+              "Priority management",
+              "Task analytics"
+            ].map((benefit, index) => (
+              <div
+                key={index}
+                className="animate-on-scroll flex items-center gap-4 p-6 rounded-xl bg-card/80 backdrop-blur-sm hover:bg-card/90 transition-all duration-300 transform hover:-translate-y-1"
+              >
+                <CheckCircle className="h-6 w-6 text-primary flex-shrink-0" />
+                <span className="text-lg">{benefit}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/10 to-purple-600/10">
-        <div className="max-w-7xl mx-auto text-center space-y-8">
+        <div className="max-w-7xl mx-auto text-center space-y-8 animate-on-scroll">
           <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Join thousands of users who are already managing their tasks more effectively.
