@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,19 +15,18 @@ export function SignIn() {
 
   useEffect(() => {
     if (user) {
-      console.log('User is authenticated, redirecting to dashboard');
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Submitting sign in form');
       setLoading(true);
       await signIn(email, password);
     } catch (error) {
-      console.error('Sign in submission error:', error);
+      console.error('Sign in error:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -53,6 +53,7 @@ export function SignIn() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter your email"
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -66,11 +67,16 @@ export function SignIn() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
+                disabled={loading}
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+            >
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
             <p className="text-center text-sm text-gray-600">
