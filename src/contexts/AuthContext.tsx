@@ -23,36 +23,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<{ username: string } | null>(null);
   const { toast } = useToast();
 
-  // Initialize auth state
   useEffect(() => {
-    const initAuth = async () => {
+    let mounted = true;
+
+    const fetchUserProfile = async (userId: string) => {
       try {
-        // Get initial session
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', session.user.id)
-            .single();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (mounted && data) {
           setUserProfile(data);
         }
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
       }
     };
 
-    initAuth();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        }
+        setLoading(false);
+      }
+    });
 
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (mounted) {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+        } else {
+          setUserProfile(null);
+        }
+        setLoading(false);
+      }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
