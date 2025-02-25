@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -55,7 +54,7 @@ const LandingPage = () => {
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 animate-on-scroll">
         <div className="max-w-7xl mx-auto">
           <div className="text-center space-y-8">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 max-w-[95%] mx-auto">
               Organize Your Life with TaskMaster
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
