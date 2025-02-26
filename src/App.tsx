@@ -9,12 +9,19 @@ import { SignUp } from '@/pages/auth/SignUp';
 import { Toaster } from '@/components/ui/toaster';
 import { setupDefaultCategories } from '@/lib/setupDefaults';
 import LandingPage from '@/pages/LandingPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -60,12 +67,14 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-        <Toaster />
-      </Router>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+          <Toaster />
+        </Router>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
