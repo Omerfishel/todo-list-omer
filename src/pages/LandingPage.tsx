@@ -37,9 +37,7 @@ const LandingPage = () => {
                 </Button>
               </Link>
               <Link to="/auth/signin">
-                <Button size="lg" variant="outline">
-                  Learn More
-                </Button>
+                <Button size="lg" variant="outline" className="text-base bg-slate-700 hover:bg-slate-600">Go ToDashboard</Button>
               </Link>
             </div>
           </div>
