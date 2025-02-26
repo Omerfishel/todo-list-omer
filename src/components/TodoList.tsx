@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Todo } from '@/services/api';
 import { todoApi, categoryApi } from '@/services/api';
@@ -123,7 +122,16 @@ export function TodoList() {
   const handleCreateTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim() === '') return;
-    createTodoMutation.mutate({ title: newTodo });
+    createTodoMutation.mutate({
+      title: newTodo,
+      completed: false,
+      urgency: 'low',
+      category_ids: [],
+      content: '',
+      image_url: undefined,
+      reminder: undefined,
+      location: undefined
+    });
   };
 
   const handleStartEditing = (todo: Todo) => {

@@ -1,5 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
 import { TodoList } from '@/components/TodoList';
 import { TodoProvider } from '@/contexts/TodoContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
