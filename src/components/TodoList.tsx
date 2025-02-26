@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Todo } from '@/services/api';
 import { todoApi, categoryApi } from '@/services/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +14,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import { Label } from '@/components/ui/label';
 import { Category } from '@/services/api';
 import { Badge } from '@/components/ui/badge';
@@ -28,14 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import { useAuth } from '@/contexts/AuthContext';
 
 export function TodoList() {
@@ -45,12 +46,22 @@ export function TodoList() {
   const [editedTodoTitle, setEditedTodoTitle] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: todos, isLoading, isError } = useQuery<Todo[]>('todos', () => todoApi.getAll());
-  const { data: categories } = useQuery<Category[]>('categories', () => categoryApi.getAll());
+  const { data: todos, isLoading: todosLoading, isError: todosError, error: todosErrorDetails } = useQuery({
+    queryKey: ['todos'],
+    queryFn: () => todoApi.getAll(),
+    retry: 1,
+  });
 
-  const createTodoMutation = useMutation(todoApi.create, {
+  const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoryApi.getAll(),
+    retry: 1,
+  });
+
+  const createTodoMutation = useMutation({
+    mutationFn: todoApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries('todos');
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
       setNewTodo('');
       toast({
         title: "Todo created",
@@ -58,17 +69,19 @@ export function TodoList() {
       });
     },
     onError: (error: any) => {
+      console.error('Create todo error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create todo",
         variant: "destructive",
       });
     },
   });
 
-  const updateTodoMutation = useMutation(todoApi.update, {
+  const updateTodoMutation = useMutation({
+    mutationFn: ({ id, todo }: { id: string; todo: Partial<Todo> }) => todoApi.update(id, todo),
     onSuccess: () => {
-      queryClient.invalidateQueries('todos');
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
       setEditingTodoId(null);
       setEditedTodoTitle('');
       toast({
@@ -77,39 +90,44 @@ export function TodoList() {
       });
     },
     onError: (error: any) => {
+      console.error('Update todo error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to update todo",
         variant: "destructive",
       });
     },
   });
 
-  const deleteTodoMutation = useMutation(todoApi.delete, {
+  const deleteTodoMutation = useMutation({
+    mutationFn: todoApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries('todos');
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
       toast({
         title: "Todo deleted",
         description: "Your todo has been deleted successfully.",
       });
     },
     onError: (error: any) => {
+      console.error('Delete todo error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to delete todo",
         variant: "destructive",
       });
     },
   });
 
-  const toggleCompleteMutation = useMutation(todoApi.update, {
+  const toggleCompleteMutation = useMutation({
+    mutationFn: ({ id, todo }: { id: string; todo: Partial<Todo> }) => todoApi.update(id, todo),
     onSuccess: () => {
-      queryClient.invalidateQueries('todos');
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
     onError: (error: any) => {
+      console.error('Toggle todo error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to update todo",
         variant: "destructive",
       });
     },
@@ -118,7 +136,17 @@ export function TodoList() {
   const handleCreateTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim() === '') return;
-    createTodoMutation.mutate({ title: newTodo });
+
+    try {
+      await createTodoMutation.mutateAsync({
+        title: newTodo,
+        completed: false,
+        urgency: 'low',
+        category_ids: []
+      });
+    } catch (error) {
+      console.error('Error in handleCreateTodo:', error);
+    }
   };
 
   const handleStartEditing = (todo: Todo) => {
@@ -132,19 +160,65 @@ export function TodoList() {
   };
 
   const handleUpdateTodo = async (id: string) => {
-    updateTodoMutation.mutate({ id: id, todo: { title: editedTodoTitle } });
+    try {
+      await updateTodoMutation.mutateAsync({
+        id,
+        todo: { title: editedTodoTitle }
+      });
+    } catch (error) {
+      console.error('Error in handleUpdateTodo:', error);
+    }
   };
 
   const handleDeleteTodo = async (id: string) => {
-    deleteTodoMutation.mutate(id);
+    try {
+      await deleteTodoMutation.mutateAsync(id);
+    } catch (error) {
+      console.error('Error in handleDeleteTodo:', error);
+    }
   };
 
   const handleToggleComplete = async (todo: Todo) => {
-    toggleCompleteMutation.mutate({ id: todo.id, todo: { completed: !todo.completed } });
+    try {
+      await toggleCompleteMutation.mutateAsync({
+        id: todo.id,
+        todo: { completed: !todo.completed }
+      });
+    } catch (error) {
+      console.error('Error in handleToggleComplete:', error);
+    }
   };
-  
-  if (isLoading) return <div>Loading todos...</div>;
-  if (isError) return <div>Error fetching todos</div>;
+
+  if (todosLoading || categoriesLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (todosError || categoriesError) {
+    console.error('Todos error:', todosErrorDetails);
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="w-full max-w-4xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-red-600">Error Loading Data</CardTitle>
+            <CardDescription>
+              There was an error loading your todos. Please try refreshing the page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['todos'] })}>
+              Retry Loading
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -166,9 +240,15 @@ export function TodoList() {
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
             />
-            <Button type="submit" disabled={createTodoMutation.isLoading}>
-              {createTodoMutation.isLoading ? 'Adding...' : <Plus className="mr-2 h-4 w-4" />}
-              Add
+            <Button type="submit" disabled={createTodoMutation.isPending}>
+              {createTodoMutation.isPending ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add
+                </>
+              )}
             </Button>
           </form>
           <ul>
@@ -179,36 +259,36 @@ export function TodoList() {
                     id={`todo-${todo.id}`}
                     checked={todo.completed}
                     onCheckedChange={() => handleToggleComplete(todo)}
-                    disabled={toggleCompleteMutation.isLoading}
+                    disabled={toggleCompleteMutation.isPending}
                     className="mr-2"
                   />
-                   <label
-                      htmlFor={`todo-${todo.id}`}
-                      className={`text-sm ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'
-                        } cursor-pointer`}
-                    >
-                      {todo.completed ? (
-                        <CheckCircle className="mr-2 h-4 w-4 text-green-500 inline-block" />
-                      ) : null}
-                      {editingTodoId === todo.id ? (
-                        <Input
-                          type="text"
-                          value={editedTodoTitle}
-                          onChange={(e) => setEditedTodoTitle(e.target.value)}
-                          onBlur={handleCancelEditing}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdateTodo(todo.id);
-                            } else if (e.key === 'Escape') {
-                              handleCancelEditing();
-                            }
-                          }}
-                          className="text-sm"
-                        />
-                      ) : (
-                        todo.title
-                      )}
-                    </label>
+                  <label
+                    htmlFor={`todo-${todo.id}`}
+                    className={`text-sm ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'
+                      } cursor-pointer`}
+                  >
+                    {todo.completed ? (
+                      <CheckCircle className="mr-2 h-4 w-4 text-green-500 inline-block" />
+                    ) : null}
+                    {editingTodoId === todo.id ? (
+                      <Input
+                        type="text"
+                        value={editedTodoTitle}
+                        onChange={(e) => setEditedTodoTitle(e.target.value)}
+                        onBlur={handleCancelEditing}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleUpdateTodo(todo.id);
+                          } else if (e.key === 'Escape') {
+                            handleCancelEditing();
+                          }
+                        }}
+                        className="text-sm"
+                      />
+                    ) : (
+                      todo.title
+                    )}
+                  </label>
                 </div>
                 <div>
                   {editingTodoId === todo.id ? (
@@ -217,15 +297,15 @@ export function TodoList() {
                         size="sm"
                         variant="secondary"
                         onClick={() => handleUpdateTodo(todo.id)}
-                        disabled={updateTodoMutation.isLoading}
+                        disabled={updateTodoMutation.isPending}
                       >
-                        {updateTodoMutation.isLoading ? 'Saving...' : 'Save'}
+                        {updateTodoMutation.isPending ? 'Saving...' : 'Save'}
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={handleCancelEditing}
-                        disabled={updateTodoMutation.isLoading}
+                        disabled={updateTodoMutation.isPending}
                       >
                         Cancel
                       </Button>

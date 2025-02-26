@@ -9,15 +9,25 @@ import { SignUp } from '@/pages/auth/SignUp';
 import { Toaster } from '@/components/ui/toaster';
 import { setupDefaultCategories } from '@/lib/setupDefaults';
 import LandingPage from '@/pages/LandingPage';
+import { toast } from '@/hooks/use-toast';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (!user) {
+    toast({
+      title: "Authentication required",
+      description: "Please sign in to access this page",
+      variant: "destructive",
+    });
     return <Navigate to="/auth/signin" />;
   }
 
@@ -26,7 +36,19 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function AuthenticatedApp() {
   useEffect(() => {
-    setupDefaultCategories();
+    const setup = async () => {
+      try {
+        await setupDefaultCategories();
+      } catch (error) {
+        console.error('Error setting up defaults:', error);
+        toast({
+          title: "Setup Error",
+          description: "There was an error setting up your account. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+    setup();
   }, []);
 
   return (
@@ -39,13 +61,21 @@ function AuthenticatedApp() {
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
       <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-      <Route path="/auth/signin" element={<SignIn />} />
-      <Route path="/auth/signup" element={<SignUp />} />
+      <Route path="/auth/signin" element={user ? <Navigate to="/dashboard" /> : <SignIn />} />
+      <Route path="/auth/signup" element={user ? <Navigate to="/dashboard" /> : <SignUp />} />
       <Route
         path="/dashboard"
         element={
