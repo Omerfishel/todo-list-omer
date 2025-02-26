@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Todo } from '@/services/api';
 import { todoApi, categoryApi } from '@/services/api';
@@ -13,6 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Category } from '@/services/api';
+import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import {
   AlertDialog,
@@ -34,29 +37,18 @@ export function TodoList() {
   const [editedTodoTitle, setEditedTodoTitle] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: todos, isLoading: todosLoading, error: todosError } = useQuery({
+  const { data: todos, isLoading, isError } = useQuery({
     queryKey: ['todos'],
-    queryFn: () => todoApi.getAll(),
-    retry: 3,
-    retryDelay: 1000,
+    queryFn: () => todoApi.getAll()
   });
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoryApi.getAll(),
+    queryFn: () => categoryApi.getAll()
   });
 
   const createTodoMutation = useMutation({
-    mutationFn: (newTodo: { title: string }) => todoApi.create({
-      title: newTodo.title,
-      completed: false,
-      content: '',
-      urgency: 'low',
-      category_ids: [],
-      image_url: undefined,
-      reminder: undefined,
-      location: undefined
-    }),
+    mutationFn: (newTodo: { title: string }) => todoApi.create(newTodo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       setNewTodo('');
@@ -155,25 +147,8 @@ export function TodoList() {
     toggleCompleteMutation.mutate({ id: todo.id, completed: !todo.completed });
   };
 
-  if (todosError) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-red-600">
-          Error loading todos. Please try again later.
-        </div>
-      </div>
-    );
-  }
-
-  if (todosLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <div>Loading todos...</div>;
+  if (isError) return <div>Error fetching todos</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -188,24 +163,19 @@ export function TodoList() {
           <CardDescription>Manage your tasks effectively.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (newTodo.trim()) {
-              createTodoMutation.mutate({ title: newTodo });
-            }
-          }} className="flex items-center space-x-2 mb-4">
+          <form onSubmit={handleCreateTodo} className="flex items-center space-x-2 mb-4">
             <Input
               type="text"
               placeholder="Add a new todo..."
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
             />
-            <Button type="submit" disabled={createTodoMutation.isPending || !newTodo.trim()}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button type="submit" disabled={createTodoMutation.isPending}>
+              {createTodoMutation.isPending ? 'Adding...' : <Plus className="mr-2 h-4 w-4" />}
               Add
             </Button>
           </form>
-          <ul className="space-y-2">
+          <ul>
             {todos?.map((todo) => (
               <li key={todo.id} className="flex items-center justify-between py-2 border-b border-gray-200">
                 <div className="flex items-center">

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,23 +9,16 @@ export function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
       await signIn(email, password);
+      navigate('/');
     } catch (error) {
-      console.error('Sign in error:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -53,7 +45,6 @@ export function SignIn() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter your email"
-                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -67,16 +58,11 @@ export function SignIn() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
-                disabled={loading}
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
             <p className="text-center text-sm text-gray-600">
@@ -90,4 +76,4 @@ export function SignIn() {
       </Card>
     </div>
   );
-}
+} 
