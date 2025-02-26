@@ -1,6 +1,6 @@
 
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import React, { useEffect } from 'react';
 import { TodoList } from '@/components/TodoList';
 import { TodoProvider } from '@/contexts/TodoContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -14,11 +14,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   if (!user) {
