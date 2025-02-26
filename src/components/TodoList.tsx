@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Todo } from '@/services/api';
 import { todoApi, categoryApi } from '@/services/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,12 +10,14 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import type { Category } from '@/services/api';
+} from "@/components/ui/card"
+import { Label } from '@/components/ui/label';
+import { Category } from '@/services/api';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, MoveRight, CheckCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +28,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useAuth } from '@/contexts/AuthContext';
 
 export function TodoList() {
@@ -37,27 +45,19 @@ export function TodoList() {
   const [editedTodoTitle, setEditedTodoTitle] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: todos, isLoading, isError } = useQuery({
-    queryKey: ['todos'],
-    queryFn: () => todoApi.getAll()
-  });
+  const { data: todos, isLoading, isError } = useQuery<Todo[]>('todos', () => todoApi.getAll());
+  const { data: categories } = useQuery<Category[]>('categories', () => categoryApi.getAll());
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoryApi.getAll()
-  });
-
-  const createTodoMutation = useMutation({
-    mutationFn: (newTodo: { title: string }) => todoApi.create(newTodo),
+  const createTodoMutation = useMutation(todoApi.create, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries('todos');
       setNewTodo('');
       toast({
         title: "Todo created",
         description: "Your todo has been created successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -66,10 +66,9 @@ export function TodoList() {
     },
   });
 
-  const updateTodoMutation = useMutation({
-    mutationFn: ({ id, todo }: { id: string; todo: Partial<Todo> }) => todoApi.update(id, todo),
+  const updateTodoMutation = useMutation(todoApi.update, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries('todos');
       setEditingTodoId(null);
       setEditedTodoTitle('');
       toast({
@@ -77,7 +76,7 @@ export function TodoList() {
         description: "Your todo has been updated successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -86,16 +85,15 @@ export function TodoList() {
     },
   });
 
-  const deleteTodoMutation = useMutation({
-    mutationFn: (id: string) => todoApi.delete(id),
+  const deleteTodoMutation = useMutation(todoApi.delete, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries('todos');
       toast({
         title: "Todo deleted",
         description: "Your todo has been deleted successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -104,13 +102,11 @@ export function TodoList() {
     },
   });
 
-  const toggleCompleteMutation = useMutation({
-    mutationFn: ({ id, completed }: { id: string; completed: boolean }) => 
-      todoApi.update(id, { completed }),
+  const toggleCompleteMutation = useMutation(todoApi.update, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries('todos');
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message,
@@ -136,7 +132,7 @@ export function TodoList() {
   };
 
   const handleUpdateTodo = async (id: string) => {
-    updateTodoMutation.mutate({ id, todo: { title: editedTodoTitle } });
+    updateTodoMutation.mutate({ id: id, todo: { title: editedTodoTitle } });
   };
 
   const handleDeleteTodo = async (id: string) => {
@@ -144,9 +140,9 @@ export function TodoList() {
   };
 
   const handleToggleComplete = async (todo: Todo) => {
-    toggleCompleteMutation.mutate({ id: todo.id, completed: !todo.completed });
+    toggleCompleteMutation.mutate({ id: todo.id, todo: { completed: !todo.completed } });
   };
-
+  
   if (isLoading) return <div>Loading todos...</div>;
   if (isError) return <div>Error fetching todos</div>;
 
@@ -170,8 +166,8 @@ export function TodoList() {
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
             />
-            <Button type="submit" disabled={createTodoMutation.isPending}>
-              {createTodoMutation.isPending ? 'Adding...' : <Plus className="mr-2 h-4 w-4" />}
+            <Button type="submit" disabled={createTodoMutation.isLoading}>
+              {createTodoMutation.isLoading ? 'Adding...' : <Plus className="mr-2 h-4 w-4" />}
               Add
             </Button>
           </form>
@@ -183,35 +179,36 @@ export function TodoList() {
                     id={`todo-${todo.id}`}
                     checked={todo.completed}
                     onCheckedChange={() => handleToggleComplete(todo)}
-                    disabled={toggleCompleteMutation.isPending}
+                    disabled={toggleCompleteMutation.isLoading}
                     className="mr-2"
                   />
-                  <label
-                    htmlFor={`todo-${todo.id}`}
-                    className={`text-sm ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'} cursor-pointer`}
-                  >
-                    {todo.completed ? (
-                      <CheckCircle className="mr-2 h-4 w-4 text-green-500 inline-block" />
-                    ) : null}
-                    {editingTodoId === todo.id ? (
-                      <Input
-                        type="text"
-                        value={editedTodoTitle}
-                        onChange={(e) => setEditedTodoTitle(e.target.value)}
-                        onBlur={handleCancelEditing}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleUpdateTodo(todo.id);
-                          } else if (e.key === 'Escape') {
-                            handleCancelEditing();
-                          }
-                        }}
-                        className="text-sm"
-                      />
-                    ) : (
-                      todo.title
-                    )}
-                  </label>
+                   <label
+                      htmlFor={`todo-${todo.id}`}
+                      className={`text-sm ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'
+                        } cursor-pointer`}
+                    >
+                      {todo.completed ? (
+                        <CheckCircle className="mr-2 h-4 w-4 text-green-500 inline-block" />
+                      ) : null}
+                      {editingTodoId === todo.id ? (
+                        <Input
+                          type="text"
+                          value={editedTodoTitle}
+                          onChange={(e) => setEditedTodoTitle(e.target.value)}
+                          onBlur={handleCancelEditing}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleUpdateTodo(todo.id);
+                            } else if (e.key === 'Escape') {
+                              handleCancelEditing();
+                            }
+                          }}
+                          className="text-sm"
+                        />
+                      ) : (
+                        todo.title
+                      )}
+                    </label>
                 </div>
                 <div>
                   {editingTodoId === todo.id ? (
@@ -220,15 +217,15 @@ export function TodoList() {
                         size="sm"
                         variant="secondary"
                         onClick={() => handleUpdateTodo(todo.id)}
-                        disabled={updateTodoMutation.isPending}
+                        disabled={updateTodoMutation.isLoading}
                       >
-                        {updateTodoMutation.isPending ? 'Saving...' : 'Save'}
+                        {updateTodoMutation.isLoading ? 'Saving...' : 'Save'}
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={handleCancelEditing}
-                        disabled={updateTodoMutation.isPending}
+                        disabled={updateTodoMutation.isLoading}
                       >
                         Cancel
                       </Button>
@@ -245,7 +242,10 @@ export function TodoList() {
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="destructive">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </Button>
@@ -254,14 +254,12 @@ export function TodoList() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete your todo.
+                              This action cannot be undone. This will permanently delete your todo from our servers.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteTodo(todo.id)}>
-                              Delete
-                            </AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDeleteTodo(todo.id)}>Delete</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
