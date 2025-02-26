@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Todo } from '@/services/api';
-import { todoApi, categoryApi } from '@/services/api';
+import { todoApi } from '@/services/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Category } from '@/services/api';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import {
   AlertDialog,
@@ -42,13 +40,9 @@ export function TodoList() {
     queryFn: () => todoApi.getAll()
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoryApi.getAll()
-  });
-
   const createTodoMutation = useMutation({
-    mutationFn: (newTodo: { title: string }) => todoApi.create(newTodo),
+    mutationFn: (todoData: Omit<Todo, 'id' | 'created_at' | 'updated_at' | 'creator_id'>) => 
+      todoApi.create(todoData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       setNewTodo('');
@@ -67,7 +61,8 @@ export function TodoList() {
   });
 
   const updateTodoMutation = useMutation({
-    mutationFn: ({ id, todo }: { id: string; todo: Partial<Todo> }) => todoApi.update(id, todo),
+    mutationFn: ({ id, todo }: { id: string; todo: Partial<Todo> }) => 
+      todoApi.update(id, todo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       setEditingTodoId(null);
@@ -122,7 +117,13 @@ export function TodoList() {
   const handleCreateTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim() === '') return;
-    createTodoMutation.mutate({ title: newTodo });
+    createTodoMutation.mutate({
+      title: newTodo,
+      completed: false,
+      content: '',
+      urgency: 'low',
+      category_ids: []
+    });
   };
 
   const handleStartEditing = (todo: Todo) => {
