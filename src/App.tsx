@@ -28,14 +28,12 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth/signin" element={<SignIn />} />
           <Route path="/auth/signup" element={<SignUp />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <AuthenticatedApp />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <AuthenticatedApp />
+            </PrivateRoute>
+          } />
+          <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
         <Toaster />
       </Router>
