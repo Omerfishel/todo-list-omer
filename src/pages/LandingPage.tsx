@@ -109,7 +109,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Benefits Section - Made more engaging and full-width */}
+      {/* Benefits Section */}
       <section className="py-20 w-full bg-gradient-to-r from-primary/5 to-purple-600/5">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-center mb-16 animate-on-scroll">
