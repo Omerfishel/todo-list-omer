@@ -20,109 +20,92 @@ export function Navbar() {
   };
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    await signOut();
+    navigate('/');
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <nav className="bg-white shadow-sm">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              <CheckSquare className="h-8 w-8 text-indigo-500" />
-              <span className="ml-2 text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-                TaskMaster
-              </span>
+            <Link to="/" className="flex items-center space-x-2">
+              <CheckSquare className="h-6 w-6 text-indigo-600" />
+              <span className="font-bold text-xl text-gray-900">TaskMaster</span>
             </Link>
           </div>
-          
+
           {/* Desktop navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-4">
+          <div className="hidden md:flex md:items-center md:space-x-4">
+            <Link 
+              to="/" 
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/') 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/features" 
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/features') 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              Features
+            </Link>
+            <Link 
+              to="/about" 
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/about') 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              About
+            </Link>
+            {user && (
               <Link 
-                to="/" 
+                to="/app" 
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/') 
-                    ? 'text-indigo-600 bg-indigo-50 border-b-2 border-indigo-500' 
-                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+                  isActive('/app') 
+                    ? 'text-indigo-600 bg-indigo-50' 
+                    : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
                 }`}
               >
-                Home
+                Dashboard
               </Link>
-              <Link 
-                to="/features" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/features') 
-                    ? 'text-indigo-600 bg-indigo-50 border-b-2 border-indigo-500' 
-                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-                }`}
-              >
-                Features
-              </Link>
-              <Link 
-                to="/about" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/about') 
-                    ? 'text-indigo-600 bg-indigo-50 border-b-2 border-indigo-500' 
-                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-                }`}
-              >
-                About
-              </Link>
-              
-              {user ? (
-                <>
-                  <Button 
-                    variant={isActive('/app') ? "default" : "secondary"}
-                    size="sm" 
-                    className={`ml-2 ${isActive('/app') ? 'bg-gradient-to-r from-indigo-500 to-purple-600' : ''}`}
-                    asChild
-                  >
-                    <Link to="/app">
-                      Dashboard
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="flex items-center gap-1"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="ml-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white"
-                  asChild
-                >
-                  <Link to="/auth/signin">
-                    Sign In
-                  </Link>
-                </Button>
-              )}
-            </div>
+            )}
           </div>
-          
+
+          <div className="hidden md:flex md:items-center md:space-x-4">
+            {user ? (
+              <Button variant="outline" onClick={handleSignOut} className="text-gray-700">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign out
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild className="text-gray-700">
+                  <Link to="/auth/signin">Sign in</Link>
+                </Button>
+                <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+                  <Link to="/auth/signup">Sign up</Link>
+                </Button>
+              </>
+            )}
+          </div>
+
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="flex md:hidden items-center">
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 focus:outline-none"
             >
-              {isOpen ? (
-                <X className="block h-6 w-6" />
-              ) : (
-                <Menu className="block h-6 w-6" />
-              )}
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -130,75 +113,77 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden animate-fadeIn">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg rounded-b-lg">
-            <Link 
-              to="/" 
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link
+              to="/"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
                 isActive('/') 
                   ? 'text-indigo-600 bg-indigo-50' 
-                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-              } transition-colors`} 
-              onClick={() => setIsOpen(false)}
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
             >
               Home
             </Link>
-            <Link 
-              to="/features" 
+            <Link
+              to="/features"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
                 isActive('/features') 
                   ? 'text-indigo-600 bg-indigo-50' 
-                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-              } transition-colors`} 
-              onClick={() => setIsOpen(false)}
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
             >
               Features
             </Link>
-            <Link 
-              to="/about" 
+            <Link
+              to="/about"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
                 isActive('/about') 
                   ? 'text-indigo-600 bg-indigo-50' 
-                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-              } transition-colors`} 
-              onClick={() => setIsOpen(false)}
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
             >
               About
             </Link>
-            
-            {user ? (
-              <>
-                <Link 
-                  to="/app" 
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    isActive('/app') 
-                      ? 'text-white bg-gradient-to-r from-indigo-500 to-purple-600' 
-                      : 'text-indigo-600 hover:bg-gray-50'
-                  } transition-colors`} 
-                  onClick={() => setIsOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <button
-                  onClick={() => {
-                    handleSignOut();
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
-                >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <Link 
-                to="/auth/signin" 
-                className="block px-3 py-2 rounded-md text-base font-medium bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-colors"
-                onClick={() => setIsOpen(false)}
+            {user && (
+              <Link
+                to="/app"
+                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  isActive('/app') 
+                    ? 'text-indigo-600 bg-indigo-50' 
+                    : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+                }`}
               >
-                Sign In
+                Dashboard
               </Link>
             )}
+          </div>
+          <div className="pt-4 pb-3 border-t border-gray-200">
+            <div className="px-2 space-y-1">
+              {user ? (
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/auth/signin"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/auth/signup"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
