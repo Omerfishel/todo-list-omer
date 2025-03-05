@@ -11,6 +11,7 @@ import { Features } from '@/pages/Features';
 import { About } from '@/pages/About';
 import { Toaster } from '@/components/ui/toaster';
 import { setupDefaultCategories } from '@/lib/setupDefaults';
+import { Navbar } from '@/components/Navbar';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -34,6 +35,7 @@ function AuthenticatedApp() {
   return (
     <TodoProvider>
       <div className="min-h-screen bg-gray-50">
+        <Navbar />
         <TodoList />
       </div>
     </TodoProvider>

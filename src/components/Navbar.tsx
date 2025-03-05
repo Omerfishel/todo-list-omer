@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, CheckSquare, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,10 @@ export function Navbar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
 
   const isActive = (path: string) => {
     return location.pathname === path;
