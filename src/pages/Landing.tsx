@@ -2,11 +2,34 @@ import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle, Clock, Calendar, Tag, List, Target, BellRing, CheckSquare } from 'lucide-react';
+import { CheckCircle, Clock, Calendar, Tag, List, Target, BellRing, CheckSquare, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 export function Landing() {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
+  const [featuresVisible, setFeaturesVisible] = useState(false);
+  const [ctaVisible, setCtaVisible] = useState(false);
+  const [taskCompleted, setTaskCompleted] = useState(false);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setScrolled(scrollY > 50);
+      setFeaturesVisible(scrollY > 300);
+      setCtaVisible(scrollY > 800);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
+  const handleCompleteTask = () => {
+    setTaskCompleted(true);
+    // Reset after animation completes
+    setTimeout(() => setTaskCompleted(false), 2000);
+  };
+  
   return <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
       <Navbar />
       
@@ -14,7 +37,7 @@ export function Landing() {
       <section className="py-16 md:py-24">
         <div className="container px-4 mx-auto">
           <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 mb-12 md:mb-0 md:pr-12">
+            <div className={`md:w-1/2 mb-12 md:mb-0 md:pr-12 transition-all duration-700 ${scrolled ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent py-[6px]">
                 Stay organized, achieve more
               </h1>
@@ -34,7 +57,7 @@ export function Landing() {
                   </>}
               </div>
             </div>
-            <div className="md:w-1/2">
+            <div className={`md:w-1/2 transition-all duration-700 ${scrolled ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <div className="rounded-xl bg-white shadow-xl border border-gray-100 p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-200 to-indigo-200 rounded-bl-full opacity-30"></div>
                 <div className="space-y-4">
@@ -42,18 +65,30 @@ export function Landing() {
                     <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
                     <span className="text-gray-800">Complete project proposal</span>
                   </div>
-                  <div className="flex items-center p-3 bg-purple-50 rounded-lg">
+                  <div 
+                    className={`flex items-center p-3 bg-purple-50 rounded-lg cursor-pointer transition-all duration-500 ${taskCompleted ? 'transform translate-x-full opacity-0' : ''}`}
+                    onClick={handleCompleteTask}
+                  >
                     <Clock className="h-6 w-6 text-purple-500 mr-3 flex-shrink-0" />
                     <span className="text-gray-800">Team meeting at 2:00 PM</span>
+                    <ArrowRight className="h-4 w-4 text-gray-400 ml-auto transition-opacity opacity-0 group-hover:opacity-100" />
                   </div>
-                  <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                  <div className={`flex items-center p-3 bg-blue-50 rounded-lg transition-all duration-500 ${taskCompleted ? 'transform -translate-y-[52px]' : ''}`}>
                     <Calendar className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" />
                     <span className="text-gray-800">Dentist appointment on Friday</span>
                   </div>
-                  <div className="flex items-center p-3 bg-pink-50 rounded-lg">
+                  <div className={`flex items-center p-3 bg-pink-50 rounded-lg transition-all duration-500 ${taskCompleted ? 'transform -translate-y-[52px]' : ''}`}>
                     <Tag className="h-6 w-6 text-pink-500 mr-3 flex-shrink-0" />
                     <span className="text-gray-800">Buy groceries for dinner</span>
                   </div>
+                  {taskCompleted && (
+                    <div className="fixed top-4 right-4 bg-green-100 text-green-800 p-3 rounded-lg shadow-md animate-fadeIn">
+                      <div className="flex items-center">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                        <span>Task completed!</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -62,7 +97,7 @@ export function Landing() {
       </section>
       
       {/* Features Section */}
-      <section className="py-16 bg-gradient-to-b from-gray-50 to-white" id="features">
+      <section className={`py-16 bg-gradient-to-b from-gray-50 to-white transition-all duration-1000 ${featuresVisible ? 'opacity-100' : 'opacity-0'}`} id="features">
         <div className="container px-4 mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent py-[6px]">
@@ -126,7 +161,7 @@ export function Landing() {
       </section>
       
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-indigo-500 to-purple-600">
+      <section className={`py-20 bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-1000 ${ctaVisible ? 'opacity-100' : 'opacity-0'}`}>
         <div className="container px-4 mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
             Ready to get organized?

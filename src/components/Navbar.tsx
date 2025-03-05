@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, CheckSquare, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,9 +9,10 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
 
   const handleSignOut = async () => {
@@ -39,22 +40,43 @@ export function Navbar() {
           {/* Desktop navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-4">
-              <Link to="/" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors">
+              <Link 
+                to="/" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/') 
+                    ? 'text-indigo-600 bg-indigo-50 border-b-2 border-indigo-500' 
+                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+                }`}
+              >
                 Home
               </Link>
-              <Link to="/features" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors">
+              <Link 
+                to="/features" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/features') 
+                    ? 'text-indigo-600 bg-indigo-50 border-b-2 border-indigo-500' 
+                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+                }`}
+              >
                 Features
               </Link>
-              <Link to="/about" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors">
+              <Link 
+                to="/about" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/about') 
+                    ? 'text-indigo-600 bg-indigo-50 border-b-2 border-indigo-500' 
+                    : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+                }`}
+              >
                 About
               </Link>
               
               {user ? (
                 <>
                   <Button 
-                    variant="secondary" 
+                    variant={isActive('/app') ? "default" : "secondary"}
                     size="sm" 
-                    className="ml-2"
+                    className={`ml-2 ${isActive('/app') ? 'bg-gradient-to-r from-indigo-500 to-purple-600' : ''}`}
                     asChild
                   >
                     <Link to="/app">
@@ -106,19 +128,51 @@ export function Navbar() {
       {isOpen && (
         <div className="md:hidden animate-fadeIn">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg rounded-b-lg">
-            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+            <Link 
+              to="/" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/') 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+              } transition-colors`} 
+              onClick={() => setIsOpen(false)}
+            >
               Home
             </Link>
-            <Link to="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+            <Link 
+              to="/features" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/features') 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+              } transition-colors`} 
+              onClick={() => setIsOpen(false)}
+            >
               Features
             </Link>
-            <Link to="/about" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+            <Link 
+              to="/about" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/about') 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+              } transition-colors`} 
+              onClick={() => setIsOpen(false)}
+            >
               About
             </Link>
             
             {user ? (
               <>
-                <Link to="/app" className="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+                <Link 
+                  to="/app" 
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive('/app') 
+                      ? 'text-white bg-gradient-to-r from-indigo-500 to-purple-600' 
+                      : 'text-indigo-600 hover:bg-gray-50'
+                  } transition-colors`} 
+                  onClick={() => setIsOpen(false)}
+                >
                   Dashboard
                 </Link>
                 <button

@@ -17,7 +17,7 @@ export function SignIn() {
     try {
       setLoading(true);
       await signIn(email, password);
-      navigate('/');
+      navigate('/app'); // Changed from '/' to '/app' to go directly to dashboard
     } catch (error) {
       setLoading(false);
     }
@@ -76,4 +76,4 @@ export function SignIn() {
       </Card>
     </div>
   );
-} 
+}
