@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle, Clock, Calendar, Tag, List, Target, BellRing } from 'lucide-react';
+import { CheckCircle, Clock, Calendar, Tag, List, Target, BellRing, CheckSquare } from 'lucide-react';
 
 export function Landing() {
   const { user } = useAuth();
