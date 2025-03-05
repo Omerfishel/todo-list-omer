@@ -1,15 +1,13 @@
-
 import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle, Clock, Calendar, Tag, List, Target, BellRing, CheckSquare } from 'lucide-react';
-
 export function Landing() {
-  const { user } = useAuth();
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
+  const {
+    user
+  } = useAuth();
+  return <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
       <Navbar />
       
       {/* Hero Section */}
@@ -17,37 +15,23 @@ export function Landing() {
         <div className="container px-4 mx-auto">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-12 md:mb-0 md:pr-12">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent py-[6px]">
                 Stay organized, achieve more
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8">
                 TaskMaster helps you manage your tasks efficiently, so you can focus on what really matters. Simple, intuitive, and powerful.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                {user ? (
-                  <Button
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all text-white px-8 py-6 h-auto text-lg"
-                    asChild
-                  >
+                {user ? <Button className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all text-white px-8 py-6 h-auto text-lg" asChild>
                     <Link to="/app">Go to Dashboard</Link>
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all text-white px-8 py-6 h-auto text-lg"
-                      asChild
-                    >
+                  </Button> : <>
+                    <Button className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all text-white px-8 py-6 h-auto text-lg" asChild>
                       <Link to="/auth/signup">Get Started</Link>
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 px-8 py-6 h-auto text-lg"
-                      asChild
-                    >
+                    <Button variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 px-8 py-6 h-auto text-lg" asChild>
                       <Link to="/auth/signin">Sign In</Link>
                     </Button>
-                  </>
-                )}
+                  </>}
               </div>
             </div>
             <div className="md:w-1/2">
@@ -81,7 +65,7 @@ export function Landing() {
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white" id="features">
         <div className="container px-4 mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent py-[6px]">
               Everything you need to stay organized
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -150,23 +134,11 @@ export function Landing() {
           <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
             Join thousands of users who have transformed their productivity with TaskMaster.
           </p>
-          {user ? (
-            <Button 
-              size="lg" 
-              className="bg-white text-indigo-600 hover:bg-gray-100 px-8"
-              asChild
-            >
+          {user ? <Button size="lg" className="bg-white text-indigo-600 hover:bg-gray-100 px-8" asChild>
               <Link to="/app">Go to Dashboard</Link>
-            </Button>
-          ) : (
-            <Button 
-              size="lg" 
-              className="bg-white text-indigo-600 hover:bg-gray-100 px-8"
-              asChild
-            >
+            </Button> : <Button size="lg" className="bg-white text-indigo-600 hover:bg-gray-100 px-8" asChild>
               <Link to="/auth/signup">Get Started for Free</Link>
-            </Button>
-          )}
+            </Button>}
         </div>
       </section>
       
@@ -235,6 +207,5 @@ export function Landing() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
