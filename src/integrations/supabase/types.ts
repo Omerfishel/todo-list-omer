@@ -99,6 +99,7 @@ export type Database = {
           reminder: string | null
           title: string
           updated_at: string | null
+          urgency: string
         }
         Insert: {
           completed?: boolean | null
@@ -111,6 +112,7 @@ export type Database = {
           reminder?: string | null
           title: string
           updated_at?: string | null
+          urgency?: string
         }
         Update: {
           completed?: boolean | null
@@ -123,6 +125,7 @@ export type Database = {
           reminder?: string | null
           title?: string
           updated_at?: string | null
+          urgency?: string
         }
         Relationships: []
       }

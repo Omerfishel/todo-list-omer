@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { TodoList } from '@/components/TodoList';
@@ -5,6 +6,9 @@ import { TodoProvider } from '@/contexts/TodoContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SignIn } from '@/pages/auth/SignIn';
 import { SignUp } from '@/pages/auth/SignUp';
+import { Landing } from '@/pages/Landing';
+import { Features } from '@/pages/Features';
+import { About } from '@/pages/About';
 import { Toaster } from '@/components/ui/toaster';
 import { setupDefaultCategories } from '@/lib/setupDefaults';
 
@@ -41,10 +45,13 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/about" element={<About />} />
           <Route path="/auth/signin" element={<SignIn />} />
           <Route path="/auth/signup" element={<SignUp />} />
           <Route
-            path="/"
+            path="/app"
             element={
               <PrivateRoute>
                 <AuthenticatedApp />
