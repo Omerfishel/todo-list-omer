@@ -36,6 +36,14 @@ export function Navbar() {
     }
   };
 
+  // Helper function to determine if a path is active
+  const isActive = (path: string) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path === '/app' && location.pathname.startsWith('/app')) return true;
+    if (path !== '/' && path !== '/app' && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
   return (
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
@@ -72,7 +80,9 @@ export function Navbar() {
                 to="/" 
                 className={cn(
                   "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                  isActive('/') 
+                    ? "bg-indigo-50 text-indigo-700 font-semibold" 
+                    : scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
                   "hover:bg-gray-50/80"
                 )}
               >
@@ -82,7 +92,9 @@ export function Navbar() {
                 to="/features" 
                 className={cn(
                   "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                  isActive('/features') 
+                    ? "bg-indigo-50 text-indigo-700 font-semibold" 
+                    : scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
                   "hover:bg-gray-50/80"
                 )}
               >
@@ -92,7 +104,9 @@ export function Navbar() {
                 to="/about" 
                 className={cn(
                   "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                  isActive('/about') 
+                    ? "bg-indigo-50 text-indigo-700 font-semibold" 
+                    : scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
                   "hover:bg-gray-50/80"
                 )}
               >
@@ -102,9 +116,12 @@ export function Navbar() {
               {user ? (
                 <>
                   <Button 
-                    variant="secondary" 
+                    variant={isActive('/app') ? "default" : "secondary"}
                     size="sm" 
-                    className="ml-2"
+                    className={cn(
+                      "ml-2",
+                      isActive('/app') && "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700"
+                    )}
                     asChild
                   >
                     <Link to="/app">
@@ -160,19 +177,55 @@ export function Navbar() {
       {isOpen && (
         <div className="md:hidden animate-fadeIn absolute w-full bg-white shadow-lg rounded-b-lg">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+            <Link 
+              to="/" 
+              className={cn(
+                "block px-3 py-2 rounded-md text-base font-medium",
+                isActive('/') 
+                  ? "bg-indigo-50 text-indigo-700" 
+                  : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+              )}
+              onClick={() => setIsOpen(false)}
+            >
               Home
             </Link>
-            <Link to="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+            <Link 
+              to="/features" 
+              className={cn(
+                "block px-3 py-2 rounded-md text-base font-medium",
+                isActive('/features') 
+                  ? "bg-indigo-50 text-indigo-700" 
+                  : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+              )}
+              onClick={() => setIsOpen(false)}
+            >
               Features
             </Link>
-            <Link to="/about" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+            <Link 
+              to="/about" 
+              className={cn(
+                "block px-3 py-2 rounded-md text-base font-medium",
+                isActive('/about') 
+                  ? "bg-indigo-50 text-indigo-700" 
+                  : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+              )}
+              onClick={() => setIsOpen(false)}
+            >
               About
             </Link>
             
             {user ? (
               <>
-                <Link to="/app" className="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
+                <Link 
+                  to="/app" 
+                  className={cn(
+                    "block px-3 py-2 rounded-md text-base font-medium",
+                    isActive('/app') 
+                      ? "bg-indigo-100 text-indigo-700" 
+                      : "text-indigo-600 hover:bg-gray-50"
+                  )}
+                  onClick={() => setIsOpen(false)}
+                >
                   Dashboard
                 </Link>
                 <button

@@ -11,6 +11,7 @@ import { Features } from '@/pages/Features';
 import { About } from '@/pages/About';
 import { Toaster } from '@/components/ui/toaster';
 import { setupDefaultCategories } from '@/lib/setupDefaults';
+import { Navbar } from '@/components/Navbar';
 
 // Wrap protected routes
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,7 @@ function AuthenticatedApp() {
 
   return (
     <TodoProvider>
+      <Navbar />
       <div className="min-h-screen bg-gray-50 pt-16">
         <TodoList />
       </div>
