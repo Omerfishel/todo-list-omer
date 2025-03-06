@@ -16,7 +16,7 @@ type TodoLocation = {
 } | null;
 
 // Add additional properties needed by our components
-export interface TodoItem extends Omit<Todo, 'location' | 'reminder'> {
+export interface TodoItem extends Omit<Todo, 'location' | 'reminder' | 'urgency'> {
   description?: string;
   subItems?: Array<{
     id: string;
@@ -28,6 +28,7 @@ export interface TodoItem extends Omit<Todo, 'location' | 'reminder'> {
   due_date?: string | null;
   category_id?: string | null;
   priority?: string | null;
+  urgency: UrgencyLevel;
 }
 
 interface TodoContextType {
@@ -58,7 +59,6 @@ interface TodoContextType {
   deleteSubItem: (todoId: string, subItemId: string) => void;
   toggleSubItem: (todoId: string, subItemId: string) => void;
   updateTodoDescription: (todoId: string, description: string) => void;
-  // Add missing methods that TodoList.tsx expects
   updateTodo: (id: string, updates: Partial<TodoItem>) => Promise<void>;
   moveTodo: (id: string, newIndex: number) => void;
 }
@@ -94,14 +94,36 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         ]);
         
         // Transform and add required properties
-        const transformedTodos: TodoItem[] = todosData.map(todo => ({ 
-          ...todo, 
-          subItems: [],
-          // Add these for TodoList.tsx compatibility
-          due_date: todo.reminder,
-          category_id: todo.category_ids?.[0] || null,
-          priority: null
-        }));
+        const transformedTodos: TodoItem[] = todosData.map(todo => {
+          // Ensure the location is properly typed
+          let typedLocation: TodoLocation = null;
+          if (todo.location) {
+            const loc = todo.location as any;
+            if (typeof loc === 'object' && 'address' in loc && 'lat' in loc && 'lng' in loc) {
+              typedLocation = {
+                address: loc.address,
+                lat: loc.lat,
+                lng: loc.lng
+              };
+            }
+          }
+          
+          // Ensure urgency is properly typed
+          const urgency: UrgencyLevel = 
+            ['low', 'medium', 'high', 'urgent'].includes(todo.urgency as string) 
+              ? (todo.urgency as UrgencyLevel) 
+              : 'low';
+
+          return { 
+            ...todo, 
+            location: typedLocation,
+            urgency,
+            subItems: [],
+            due_date: todo.reminder,
+            category_id: todo.category_ids?.[0] || null,
+            priority: null
+          };
+        });
         
         setTodos(transformedTodos);
         await loadCategories();
@@ -109,6 +131,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Error loading data:', error);
       }
     };
+    
     loadData();
   }, []);
 
@@ -134,9 +157,30 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         image_url: undefined
       });
 
+      // Ensure the location is properly typed
+      let typedLocation: TodoLocation = null;
+      if (newTodo.location) {
+        const loc = newTodo.location as any;
+        if (typeof loc === 'object' && 'address' in loc && 'lat' in loc && 'lng' in loc) {
+          typedLocation = {
+            address: loc.address,
+            lat: loc.lat,
+            lng: loc.lng
+          };
+        }
+      }
+
+      // Ensure urgency is properly typed
+      const typedUrgency: UrgencyLevel = 
+        ['low', 'medium', 'high', 'urgent'].includes(newTodo.urgency as string) 
+          ? (newTodo.urgency as UrgencyLevel) 
+          : 'low';
+
       // Add the extra fields needed for TodoList.tsx
       const todoWithExtras: TodoItem = {
         ...newTodo,
+        location: typedLocation,
+        urgency: typedUrgency,
         subItems: [],
         due_date: reminderStr,
         category_id: categoryId || null,
@@ -182,9 +226,30 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         completed: !todo.completed
       });
 
+      // Ensure the location is properly typed
+      let typedLocation: TodoLocation = null;
+      if (updatedTodo.location) {
+        const loc = updatedTodo.location as any;
+        if (typeof loc === 'object' && 'address' in loc && 'lat' in loc && 'lng' in loc) {
+          typedLocation = {
+            address: loc.address,
+            lat: loc.lat,
+            lng: loc.lng
+          };
+        }
+      }
+
+      // Ensure urgency is properly typed
+      const typedUrgency: UrgencyLevel = 
+        ['low', 'medium', 'high', 'urgent'].includes(updatedTodo.urgency as string) 
+          ? (updatedTodo.urgency as UrgencyLevel) 
+          : 'low';
+
       setTodos(prev => prev.map(t => 
         t.id === id ? { 
           ...updatedTodo, 
+          location: typedLocation,
+          urgency: typedUrgency,
           subItems: t.subItems,
           due_date: updatedTodo.reminder,
           category_id: updatedTodo.category_ids?.[0] || null 
@@ -215,6 +280,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
       if (!todo) return;
 
       const reminderStr = reminder ? reminder.toISOString() : todo.reminder;
+      const typedUrgency: UrgencyLevel = urgency || todo.urgency || 'low';
       
       const updatedTodo = await todoApi.update(id, {
         ...todo,
@@ -222,8 +288,21 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         content,
         reminder: reminderStr,
         location,
-        urgency: urgency || todo.urgency || 'low'
+        urgency: typedUrgency
       });
+
+      // Ensure the location is properly typed
+      let typedLocation: TodoLocation = null;
+      if (updatedTodo.location) {
+        const loc = updatedTodo.location as any;
+        if (typeof loc === 'object' && 'address' in loc && 'lat' in loc && 'lng' in loc) {
+          typedLocation = {
+            address: loc.address,
+            lat: loc.lat,
+            lng: loc.lng
+          };
+        }
+      }
 
       setTodos(prev => prev.map(t => 
         t.id === id ? { 
@@ -232,8 +311,8 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
           title: updatedTodo.title,
           content: updatedTodo.content,
           reminder: updatedTodo.reminder,
-          location: updatedTodo.location as TodoLocation,
-          urgency: updatedTodo.urgency,
+          location: typedLocation,
+          urgency: typedUrgency,
           subItems: t.subItems,
           due_date: updatedTodo.reminder,
           category_id: updatedTodo.category_ids?.[0] || null
@@ -389,9 +468,17 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
         t.id === id ? { ...t, ...updates } : t
       ));
 
+      // Ensure urgency is a valid value if it's being updated
+      const typedUrgency: UrgencyLevel | undefined = updates.urgency 
+        ? (['low', 'medium', 'high', 'urgent'].includes(updates.urgency) 
+            ? updates.urgency as UrgencyLevel 
+            : 'low')
+        : undefined;
+
       // Prepare API compatible updates
       const apiUpdates: Partial<Todo> = {
         ...updates,
+        urgency: typedUrgency || todo.urgency,
         category_ids: updates.category_id ? [updates.category_id] : todo.category_ids,
         reminder: updates.due_date || todo.reminder
       };

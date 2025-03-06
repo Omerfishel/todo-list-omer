@@ -65,10 +65,32 @@ export const todoApi = {
 
       if (!todos) return [];
 
-      return todos.map(todo => ({
-        ...todo,
-        category_ids: todo.todo_categories?.map(tc => tc.category_id) || []
-      }));
+      return todos.map(todo => {
+        let safeLocation = null;
+        if (todo.location) {
+          try {
+            if (typeof todo.location === 'string') {
+              const parsed = JSON.parse(todo.location);
+              safeLocation = parsed;
+            } else {
+              safeLocation = todo.location;
+            }
+          } catch (e) {
+            console.error('Error parsing location:', e);
+          }
+        }
+
+        const safeUrgency = ['low', 'medium', 'high', 'urgent'].includes(todo.urgency) 
+          ? todo.urgency 
+          : 'low';
+
+        return {
+          ...todo,
+          location: safeLocation,
+          urgency: safeUrgency,
+          category_ids: todo.todo_categories?.map(tc => tc.category_id) || []
+        };
+      });
     } catch (error) {
       console.error('Error in getAll:', error);
       return [];
@@ -88,6 +110,15 @@ export const todoApi = {
 
     const reminderString = todo.reminder || null;
 
+    let locationJson: any = null;
+    if (todo.location) {
+      locationJson = todo.location;
+    }
+
+    const safeUrgency = ['low', 'medium', 'high', 'urgent'].includes(todo.urgency) 
+      ? todo.urgency 
+      : 'low';
+
     const { data, error } = await supabase
       .from('todos')
       .insert([{
@@ -96,8 +127,8 @@ export const todoApi = {
         completed: false,
         image_url: todo.image_url,
         reminder: reminderString,
-        location: todo.location,
-        urgency: todo.urgency || 'low',
+        location: locationJson,
+        urgency: safeUrgency,
         creator_id: userData.user.id
       }])
       .select()
@@ -138,6 +169,15 @@ export const todoApi = {
   update: async (id: string, todo: Partial<Todo>) => {
     try {
       const reminderString = todo.reminder || null;
+      
+      let locationJson: any = null;
+      if (todo.location) {
+        locationJson = todo.location;
+      }
+
+      const safeUrgency = todo.urgency ? 
+        (['low', 'medium', 'high', 'urgent'].includes(todo.urgency) ? todo.urgency : 'low') 
+        : undefined;
 
       const { data, error } = await supabase
         .from('todos')
@@ -147,8 +187,8 @@ export const todoApi = {
           completed: todo.completed,
           image_url: todo.image_url,
           reminder: reminderString,
-          location: todo.location,
-          urgency: todo.urgency || 'low'
+          location: locationJson,
+          urgency: safeUrgency
         })
         .eq('id', id)
         .select()

@@ -26,27 +26,28 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
       <Label htmlFor="category" className="text-right">
         Category
       </Label>
-      <div className="col-span-3">
-        <Select value={selectedCategory} onValueChange={onCategoryChange}>
-          <SelectTrigger id="category">
-            <SelectValue placeholder="Select a category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">None</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                <div className="flex items-center">
-                  <div 
-                    className="w-3 h-3 rounded-full mr-2" 
-                    style={{ backgroundColor: category.color }}
-                  ></div>
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Select 
+        value={selectedCategory} 
+        onValueChange={onCategoryChange}
+      >
+        <SelectTrigger id="category" className="col-span-3">
+          <SelectValue placeholder="Select a category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">None</SelectItem>
+          {categories.map((category) => (
+            <SelectItem key={category.id} value={category.id}>
+              <div className="flex items-center">
+                <div 
+                  className="w-3 h-3 rounded-full mr-2" 
+                  style={{ backgroundColor: category.color }}
+                />
+                {category.name}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };
