@@ -1,14 +1,27 @@
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, CheckSquare, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle scrolling effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -24,13 +37,29 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
+    <nav className={cn(
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+      scrolled 
+        ? "bg-white/90 backdrop-blur-md shadow-sm" 
+        : "bg-transparent",
+      location.pathname.startsWith('/app') 
+        ? "bg-white/90 backdrop-blur-md shadow-sm" 
+        : ""
+    )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <CheckSquare className="h-8 w-8 text-indigo-500" />
-              <span className="ml-2 text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+              <CheckSquare className={cn(
+                "h-8 w-8 transition-colors",
+                scrolled ? "text-indigo-600" : "text-indigo-500"
+              )} />
+              <span className={cn(
+                "ml-2 text-xl font-bold transition-all",
+                scrolled 
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent" 
+                  : "bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent"
+              )}>
                 TaskMaster
               </span>
             </Link>
@@ -39,13 +68,34 @@ export function Navbar() {
           {/* Desktop navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-4">
-              <Link to="/" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors">
+              <Link 
+                to="/" 
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                  "hover:bg-gray-50/80"
+                )}
+              >
                 Home
               </Link>
-              <Link to="/features" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors">
+              <Link 
+                to="/features" 
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                  "hover:bg-gray-50/80"
+                )}
+              >
                 Features
               </Link>
-              <Link to="/about" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors">
+              <Link 
+                to="/about" 
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                  "hover:bg-gray-50/80"
+                )}
+              >
                 About
               </Link>
               
@@ -75,7 +125,7 @@ export function Navbar() {
                 <Button 
                   variant="default" 
                   size="sm" 
-                  className="ml-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white"
+                  className="ml-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all"
                   asChild
                 >
                   <Link to="/auth/signin">
@@ -90,7 +140,11 @@ export function Navbar() {
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
+              className={cn(
+                "inline-flex items-center justify-center p-2 rounded-md transition-colors",
+                scrolled ? "text-gray-800 hover:text-indigo-700" : "text-gray-700 hover:text-indigo-600",
+                "hover:bg-gray-50/80"
+              )}
             >
               {isOpen ? (
                 <X className="block h-6 w-6" />
@@ -104,8 +158,8 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden animate-fadeIn">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg rounded-b-lg">
+        <div className="md:hidden animate-fadeIn absolute w-full bg-white shadow-lg rounded-b-lg">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors" onClick={() => setIsOpen(false)}>
               Home
             </Link>

@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { TodoList } from '@/components/TodoList';
 import { TodoProvider } from '@/contexts/TodoContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -12,20 +12,31 @@ import { About } from '@/pages/About';
 import { Toaster } from '@/components/ui/toaster';
 import { setupDefaultCategories } from '@/lib/setupDefaults';
 
+// Wrap protected routes
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-pulse text-center">
+          <div className="h-12 w-12 mx-auto bg-indigo-400 rounded-full"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
-    return <Navigate to="/auth/signin" />;
+    // Redirect to signin page but save the location they were trying to access
+    return <Navigate to="/auth/signin" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
 }
 
+// Dashboard component with setup
 function AuthenticatedApp() {
   useEffect(() => {
     setupDefaultCategories();
@@ -33,7 +44,7 @@ function AuthenticatedApp() {
 
   return (
     <TodoProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 pt-16">
         <TodoList />
       </div>
     </TodoProvider>
@@ -51,13 +62,14 @@ function App() {
           <Route path="/auth/signin" element={<SignIn />} />
           <Route path="/auth/signup" element={<SignUp />} />
           <Route
-            path="/app"
+            path="/app/*"
             element={
               <PrivateRoute>
                 <AuthenticatedApp />
               </PrivateRoute>
             }
           />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster />
       </Router>
