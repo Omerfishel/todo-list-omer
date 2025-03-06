@@ -15,31 +15,31 @@ export interface Database {
           id: string
           created_at: string
           title: string
-          description: string | null
           completed: boolean
           user_id: string
-          category: string | null
+          category_id: string | null
           due_date: string | null
+          priority: string | null
         }
         Insert: {
           id?: string
           created_at?: string
           title: string
-          description?: string | null
           completed?: boolean
           user_id: string
-          category?: string | null
+          category_id?: string | null
           due_date?: string | null
+          priority?: string | null
         }
         Update: {
           id?: string
           created_at?: string
           title?: string
-          description?: string | null
           completed?: boolean
           user_id?: string
-          category?: string | null
+          category_id?: string | null
           due_date?: string | null
+          priority?: string | null
         }
       }
       categories: {
@@ -62,15 +62,23 @@ export interface Database {
           user_id?: string
         }
       }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          id: string
+          username: string
+          avatar_url: string | null
+        }
+        Insert: {
+          id: string
+          username: string
+          avatar_url?: string | null
+        }
+        Update: {
+          id?: string
+          username?: string
+          avatar_url?: string | null
+        }
+      }
     }
   }
 }
