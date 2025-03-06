@@ -1,5 +1,5 @@
-
 import { supabase } from '@/lib/supabase';
+import { Json } from '@/types/supabase.types';
 
 export interface Todo {
   id: string;
@@ -86,10 +86,7 @@ export const todoApi = {
       throw new Error('No authenticated user found');
     }
 
-    // Convert Date objects to ISO strings for Supabase
-    const reminderString = todo.reminder instanceof Date 
-      ? todo.reminder.toISOString() 
-      : todo.reminder;
+    const reminderString = todo.reminder || null;
 
     const { data, error } = await supabase
       .from('todos')
@@ -140,10 +137,7 @@ export const todoApi = {
 
   update: async (id: string, todo: Partial<Todo>) => {
     try {
-      // Convert Date objects to ISO strings for Supabase
-      const reminderString = todo.reminder instanceof Date 
-        ? todo.reminder.toISOString() 
-        : todo.reminder;
+      const reminderString = todo.reminder || null;
 
       const { data, error } = await supabase
         .from('todos')

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,13 @@ export function Notifications() {
   const loadNotifications = async () => {
     try {
       const data = await profileApi.getNotifications();
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.read).length);
+      // Cast the type here to ensure compatibility with our Notification type
+      const typedNotifications = data.map(n => ({
+        ...n,
+        type: n.type as 'TODO_COMPLETED' | 'TODO_ASSIGNED' | 'TODO_UNASSIGNED'
+      }));
+      setNotifications(typedNotifications);
+      setUnreadCount(typedNotifications.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
@@ -106,4 +112,4 @@ export function Notifications() {
       </PopoverContent>
     </Popover>
   );
-} 
+}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, CheckCircle, XCircle, Calendar, ListChecks, ArrowDown, ArrowUp, GripVertical } from 'lucide-react';
 import { useTodo } from '@/contexts/TodoContext';
@@ -5,6 +6,8 @@ import { CategorySelect } from './CategorySelect';
 import { DatePicker } from './DatePicker';
 import { PrioritySelect } from './PrioritySelect';
 import { Navbar } from '@/components/Navbar';
+import { v4 as uuidv4 } from 'uuid';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 import {
   AlertDialog,
@@ -16,12 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -29,12 +32,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
+} from "@/components/ui/sheet";
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { v4 as uuidv4 } from 'uuid';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 export function TodoList() {
   const { todos, addTodo, updateTodo, deleteTodo, categories, moveTodo } = useTodo();
@@ -54,8 +55,8 @@ export function TodoList() {
       const todoToEdit = todos.find(todo => todo.id === editTodoId);
       if (todoToEdit) {
         setEditTitle(todoToEdit.title);
-        setSelectedCategory(todoToEdit.category_id || '');
-        setDueDate(todoToEdit.due_date ? new Date(todoToEdit.due_date) : null);
+        setSelectedCategory(todoToEdit.category_ids[0] || '');
+        setDueDate(todoToEdit.reminder ? new Date(todoToEdit.reminder) : null);
         setPriority(todoToEdit.priority || '');
       }
     } else {
@@ -68,8 +69,8 @@ export function TodoList() {
 
   const sortedTodos = [...todos].sort((a, b) => {
     if (sortBy === 'dueDate') {
-      const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-      const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+      const dateA = a.reminder ? new Date(a.reminder).getTime() : Infinity;
+      const dateB = b.reminder ? new Date(b.reminder).getTime() : Infinity;
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     } else if (sortBy === 'priority') {
       const priorityValues: { [key: string]: number } = { 'high': 3, 'medium': 2, 'low': 1, '': 0 };
@@ -99,25 +100,34 @@ export function TodoList() {
       return;
     }
 
-    const newTodoId = uuidv4();
-    await addTodo({
-      id: newTodoId,
-      title,
-      completed: false,
-      user_id: user.id,
-      category_id: selectedCategory || null,
-      due_date: dueDate ? dueDate.toISOString() : null,
-      priority: priority || null,
-    });
-    setTitle('');
-    setOpen(false);
-    setSelectedCategory('');
-    setDueDate(null);
-    setPriority('');
-    toast({
-      title: "Success",
-      description: "Todo added successfully.",
-    });
+    try {
+      await addTodo(
+        title,
+        selectedCategory,
+        '',
+        dueDate,
+        undefined,
+        priority ? priority as any : undefined
+      );
+      
+      setTitle('');
+      setOpen(false);
+      setSelectedCategory('');
+      setDueDate(null);
+      setPriority('');
+      
+      toast({
+        title: "Success",
+        description: "Todo added successfully.",
+      });
+    } catch (error) {
+      console.error("Error adding todo:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add todo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpdateTodo = async (id: string) => {
@@ -132,14 +142,16 @@ export function TodoList() {
 
     await updateTodo(id, {
       title: editTitle,
-      category_id: selectedCategory || null,
-      due_date: dueDate ? dueDate.toISOString() : null,
+      category_ids: selectedCategory ? [selectedCategory] : [],
+      reminder: dueDate ? dueDate.toISOString() : null,
       priority: priority || null,
     });
+    
     setEditTodoId(null);
     setSelectedCategory('');
     setDueDate(null);
     setPriority('');
+    
     toast({
       title: "Success",
       description: "Todo updated successfully.",
@@ -262,7 +274,7 @@ export function TodoList() {
                         <div>
                           <Sheet>
                             <SheetTrigger asChild>
-                              <Button variant="ghost" size="sm" className="mr-2">
+                              <Button variant="ghost" size="sm" className="mr-2" onClick={() => setEditTodoId(todo.id)}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </Button>

@@ -72,7 +72,7 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "tiptap": "^1.32.2",
-    "uuid": "^9.0.1",
+    "uuid": "file:9.0.1 @types/uuid@9.0.8 react-beautiful-dnd@13.1.1 @types/react-beautiful-dnd@13.1.8",
     "vaul": "^0.9.3",
     "zod": "^3.23.8"
   },
