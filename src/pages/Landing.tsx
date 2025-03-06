@@ -163,8 +163,12 @@ export function Landing() {
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
               <div className="flex-1 text-gray-400 text-sm ml-2">TaskMaster Dashboard</div>
             </div>
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 aspect-video flex items-center justify-center">
-              <div className="text-2xl text-gray-400">App Demo GIF/Video Here</div>
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-2">
+              <img 
+                src="/lovable-uploads/cf50abd6-a33c-4713-bbc6-1ace7702b810.png" 
+                alt="TaskMaster App Interface" 
+                className="w-full h-auto rounded-md shadow-md transform hover:scale-[1.01] transition-transform duration-300"
+              />
             </div>
           </div>
         </div>
