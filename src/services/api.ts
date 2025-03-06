@@ -80,8 +80,8 @@ export const todoApi = {
           }
         }
 
-        const safeUrgency = ['low', 'medium', 'high', 'urgent'].includes(todo.urgency) 
-          ? todo.urgency 
+        const safeUrgency = ['low', 'medium', 'high', 'urgent'].includes(String(todo.urgency)) 
+          ? String(todo.urgency)
           : 'low';
 
         return {

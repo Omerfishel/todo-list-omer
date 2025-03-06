@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { todoApi, categoryApi } from '@/services/api';
 import type { Todo, Category } from '@/services/api';
@@ -110,19 +109,19 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
           
           // Ensure urgency is properly typed
           const urgency: UrgencyLevel = 
-            ['low', 'medium', 'high', 'urgent'].includes(todo.urgency as string) 
-              ? (todo.urgency as UrgencyLevel) 
+            ['low', 'medium', 'high', 'urgent'].includes(String(todo.urgency)) 
+              ? (String(todo.urgency) as UrgencyLevel) 
               : 'low';
 
           return { 
             ...todo, 
             location: typedLocation,
             urgency,
-            subItems: [],
+            subItems: [] as Array<{id: string; title: string; completed: boolean}>,
             due_date: todo.reminder,
             category_id: todo.category_ids?.[0] || null,
             priority: null
-          };
+          } as TodoItem;
         });
         
         setTodos(transformedTodos);
@@ -457,7 +456,6 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
     ));
   };
 
-  // Implement the missing methods for TodoList.tsx
   const updateTodo = async (id: string, updates: Partial<TodoItem>) => {
     try {
       const todo = todos.find(t => t.id === id);
@@ -466,7 +464,7 @@ export const TodoProvider = ({ children }: { children: React.ReactNode }) => {
       // Update local state first for immediate UI feedback
       setTodos(prev => prev.map(t => 
         t.id === id ? { ...t, ...updates } : t
-      ));
+      ) as TodoItem[]);
 
       // Ensure urgency is a valid value if it's being updated
       const typedUrgency: UrgencyLevel | undefined = updates.urgency 
