@@ -41,6 +41,40 @@ export interface Database {
           }
         ]
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          message: string
+          read: boolean
+          created_at: string
+          type: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          message: string
+          read?: boolean
+          created_at?: string
+          type: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          message?: string
+          read?: boolean
+          created_at?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           id: string
@@ -67,6 +101,46 @@ export interface Database {
           {
             foreignKeyName: "profiles_id_fkey"
             columns: ["id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      todo_assignments: {
+        Row: {
+          todo_id: string
+          user_id: string
+          assigned_by: string | null
+          created_at: string
+        }
+        Insert: {
+          todo_id: string
+          user_id: string
+          assigned_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          todo_id?: string
+          user_id?: string
+          assigned_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todo_assignments_todo_id_fkey"
+            columns: ["todo_id"]
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todo_assignments_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todo_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
             referencedRelation: "users"
             referencedColumns: ["id"]
           }

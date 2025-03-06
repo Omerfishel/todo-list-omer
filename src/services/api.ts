@@ -1,22 +1,23 @@
+
 import { supabase } from '@/lib/supabase';
 
 export interface Todo {
   id: string;
   title: string;
-  content?: string;
+  content?: string | null;
   completed: boolean;
-  image_url?: string;
-  reminder?: Date;
+  image_url?: string | null;
+  reminder?: string | null;
   location?: {
     address: string;
     lat: number;
     lng: number;
-  };
+  } | null;
   urgency: 'low' | 'medium' | 'high' | 'urgent';
   category_ids: string[];
   creator_id: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Category {
@@ -24,15 +25,15 @@ export interface Category {
   name: string;
   color: string;
   user_id: string;
-  created_at: Date;
+  created_at: string;
 }
 
 export interface Profile {
   id: string;
   username: string;
-  avatar_url?: string;
-  created_at: Date;
-  updated_at: Date;
+  avatar_url?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Notification {
@@ -40,7 +41,7 @@ export interface Notification {
   user_id: string;
   message: string;
   read: boolean;
-  created_at: Date;
+  created_at: string;
   type: 'TODO_COMPLETED' | 'TODO_ASSIGNED' | 'TODO_UNASSIGNED';
 }
 
@@ -85,6 +86,11 @@ export const todoApi = {
       throw new Error('No authenticated user found');
     }
 
+    // Convert Date objects to ISO strings for Supabase
+    const reminderString = todo.reminder instanceof Date 
+      ? todo.reminder.toISOString() 
+      : todo.reminder;
+
     const { data, error } = await supabase
       .from('todos')
       .insert([{
@@ -92,7 +98,7 @@ export const todoApi = {
         content: todo.content || '',
         completed: false,
         image_url: todo.image_url,
-        reminder: todo.reminder,
+        reminder: reminderString,
         location: todo.location,
         urgency: todo.urgency || 'low',
         creator_id: userData.user.id
@@ -134,6 +140,11 @@ export const todoApi = {
 
   update: async (id: string, todo: Partial<Todo>) => {
     try {
+      // Convert Date objects to ISO strings for Supabase
+      const reminderString = todo.reminder instanceof Date 
+        ? todo.reminder.toISOString() 
+        : todo.reminder;
+
       const { data, error } = await supabase
         .from('todos')
         .update({
@@ -141,7 +152,7 @@ export const todoApi = {
           content: todo.content,
           completed: todo.completed,
           image_url: todo.image_url,
-          reminder: todo.reminder,
+          reminder: reminderString,
           location: todo.location,
           urgency: todo.urgency || 'low'
         })
@@ -211,11 +222,11 @@ export const todoApi = {
 
     const { data, error } = await supabase
       .from('todo_assignments')
-      .insert([{
+      .insert({
         todo_id: todoId,
         user_id: userId,
-        assigned_by: userData.user.id
-      }])
+        assigned_by: userData.user?.id
+      })
       .select()
       .single();
 
@@ -241,7 +252,7 @@ export const categoryApi = {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .eq('user_id', userData.user.id)
+      .eq('user_id', userData.user?.id)
       .order('name');
 
     if (error) throw error;
@@ -257,7 +268,7 @@ export const categoryApi = {
       .insert([{
         name: category.name,
         color: category.color,
-        user_id: userData.user.id
+        user_id: userData.user?.id
       }])
       .select()
       .single();
