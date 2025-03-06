@@ -1,23 +1,22 @@
 import { supabase } from '@/lib/supabase';
-import { Json } from '@/types/supabase.types';
 
 export interface Todo {
   id: string;
   title: string;
-  content?: string | null;
+  content?: string;
   completed: boolean;
-  image_url?: string | null;
-  reminder?: string | null;
+  image_url?: string;
+  reminder?: Date;
   location?: {
     address: string;
     lat: number;
     lng: number;
-  } | null;
+  };
   urgency: 'low' | 'medium' | 'high' | 'urgent';
   category_ids: string[];
   creator_id: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Category {
@@ -25,15 +24,15 @@ export interface Category {
   name: string;
   color: string;
   user_id: string;
-  created_at: string;
+  created_at: Date;
 }
 
 export interface Profile {
   id: string;
   username: string;
-  avatar_url?: string | null;
-  created_at: string;
-  updated_at: string;
+  avatar_url?: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Notification {
@@ -41,7 +40,7 @@ export interface Notification {
   user_id: string;
   message: string;
   read: boolean;
-  created_at: string;
+  created_at: Date;
   type: 'TODO_COMPLETED' | 'TODO_ASSIGNED' | 'TODO_UNASSIGNED';
 }
 
@@ -65,32 +64,10 @@ export const todoApi = {
 
       if (!todos) return [];
 
-      return todos.map(todo => {
-        let safeLocation = null;
-        if (todo.location) {
-          try {
-            if (typeof todo.location === 'string') {
-              const parsed = JSON.parse(todo.location);
-              safeLocation = parsed;
-            } else {
-              safeLocation = todo.location;
-            }
-          } catch (e) {
-            console.error('Error parsing location:', e);
-          }
-        }
-
-        const safeUrgency = ['low', 'medium', 'high', 'urgent'].includes(String(todo.urgency)) 
-          ? String(todo.urgency)
-          : 'low';
-
-        return {
-          ...todo,
-          location: safeLocation,
-          urgency: safeUrgency,
-          category_ids: todo.todo_categories?.map(tc => tc.category_id) || []
-        };
-      });
+      return todos.map(todo => ({
+        ...todo,
+        category_ids: todo.todo_categories?.map(tc => tc.category_id) || []
+      }));
     } catch (error) {
       console.error('Error in getAll:', error);
       return [];
@@ -108,17 +85,6 @@ export const todoApi = {
       throw new Error('No authenticated user found');
     }
 
-    const reminderString = todo.reminder || null;
-
-    let locationJson: any = null;
-    if (todo.location) {
-      locationJson = todo.location;
-    }
-
-    const safeUrgency = ['low', 'medium', 'high', 'urgent'].includes(todo.urgency) 
-      ? todo.urgency 
-      : 'low';
-
     const { data, error } = await supabase
       .from('todos')
       .insert([{
@@ -126,9 +92,9 @@ export const todoApi = {
         content: todo.content || '',
         completed: false,
         image_url: todo.image_url,
-        reminder: reminderString,
-        location: locationJson,
-        urgency: safeUrgency,
+        reminder: todo.reminder,
+        location: todo.location,
+        urgency: todo.urgency || 'low',
         creator_id: userData.user.id
       }])
       .select()
@@ -168,17 +134,6 @@ export const todoApi = {
 
   update: async (id: string, todo: Partial<Todo>) => {
     try {
-      const reminderString = todo.reminder || null;
-      
-      let locationJson: any = null;
-      if (todo.location) {
-        locationJson = todo.location;
-      }
-
-      const safeUrgency = todo.urgency ? 
-        (['low', 'medium', 'high', 'urgent'].includes(todo.urgency) ? todo.urgency : 'low') 
-        : undefined;
-
       const { data, error } = await supabase
         .from('todos')
         .update({
@@ -186,9 +141,9 @@ export const todoApi = {
           content: todo.content,
           completed: todo.completed,
           image_url: todo.image_url,
-          reminder: reminderString,
-          location: locationJson,
-          urgency: safeUrgency
+          reminder: todo.reminder,
+          location: todo.location,
+          urgency: todo.urgency || 'low'
         })
         .eq('id', id)
         .select()
@@ -256,11 +211,11 @@ export const todoApi = {
 
     const { data, error } = await supabase
       .from('todo_assignments')
-      .insert({
+      .insert([{
         todo_id: todoId,
         user_id: userId,
-        assigned_by: userData.user?.id
-      })
+        assigned_by: userData.user.id
+      }])
       .select()
       .single();
 
@@ -286,7 +241,7 @@ export const categoryApi = {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .eq('user_id', userData.user?.id)
+      .eq('user_id', userData.user.id)
       .order('name');
 
     if (error) throw error;
@@ -302,7 +257,7 @@ export const categoryApi = {
       .insert([{
         name: category.name,
         color: category.color,
-        user_id: userData.user?.id
+        user_id: userData.user.id
       }])
       .select()
       .single();
