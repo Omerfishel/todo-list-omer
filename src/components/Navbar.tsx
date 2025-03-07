@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, CheckSquare, Home } from 'lucide-react';
+import { Menu, X, CheckSquare, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,15 +25,6 @@ export function Navbar() {
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
   };
 
   // Helper function to determine if a path is active
@@ -114,30 +105,19 @@ export function Navbar() {
               </Link>
               
               {user ? (
-                <>
-                  <Button 
-                    variant={isActive('/app') ? "default" : "secondary"}
-                    size="sm" 
-                    className={cn(
-                      "ml-2",
-                      isActive('/app') && "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700"
-                    )}
-                    asChild
-                  >
-                    <Link to="/app">
-                      Dashboard
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="flex items-center gap-1"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </Button>
-                </>
+                <Button 
+                  variant={isActive('/app') ? "default" : "secondary"}
+                  size="sm" 
+                  className={cn(
+                    "ml-2",
+                    isActive('/app') && "bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700"
+                  )}
+                  asChild
+                >
+                  <Link to="/app">
+                    Dashboard
+                  </Link>
+                </Button>
               ) : (
                 <Button 
                   variant="default" 
@@ -215,30 +195,18 @@ export function Navbar() {
             </Link>
             
             {user ? (
-              <>
-                <Link 
-                  to="/app" 
-                  className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium",
-                    isActive('/app') 
-                      ? "bg-indigo-100 text-indigo-700" 
-                      : "text-indigo-600 hover:bg-gray-50"
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <button
-                  onClick={() => {
-                    handleSignOut();
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
-                >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Sign Out
-                </button>
-              </>
+              <Link 
+                to="/app" 
+                className={cn(
+                  "block px-3 py-2 rounded-md text-base font-medium",
+                  isActive('/app') 
+                    ? "bg-indigo-100 text-indigo-700" 
+                    : "text-indigo-600 hover:bg-gray-50"
+                )}
+                onClick={() => setIsOpen(false)}
+              >
+                Dashboard
+              </Link>
             ) : (
               <Link 
                 to="/auth/signin" 
