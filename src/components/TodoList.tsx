@@ -22,6 +22,13 @@ import { CalendarView } from './CalendarView';
 type SortOption = 'modified' | 'reminder' | 'urgency' | 'created';
 type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
 
+interface TodoItemProps {
+  todo: TodoItem;
+  viewMode: 'grid' | 'list';
+}
+
+type TodoItemExtended = TodoItem;
+
 const PASTEL_COLORS = ['#F2FCE2',
 // Soft Green
 '#FEF7CD',
@@ -816,8 +823,12 @@ export const TodoList = () => {
       </div>
 
       <div className="space-y-6 mb-8">
-        <div className="flex justify-between border-b pb-4">
-          <div className="flex gap-2">
+        <div className="flex justify-between items-center border-b pb-4">
+          <div className="w-24">
+            {/* Empty space for balance */}
+          </div>
+          
+          <div className="flex gap-2 justify-center flex-1">
             <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className="w-24">
               All
             </Button>
@@ -829,9 +840,11 @@ export const TodoList = () => {
             </Button>
           </div>
           
-          <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')}>
-            {getViewIcon()}
-          </Button>
+          <div className="w-24 flex justify-end">
+            <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')}>
+              {getViewIcon()}
+            </Button>
+          </div>
         </div>
 
         {renderCategoryTags()}
