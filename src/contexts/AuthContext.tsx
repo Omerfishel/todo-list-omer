@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -53,7 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (profileError) throw profileError;
 
-        // No toast here, we'll handle success in the SignUp component
+        toast({
+          title: "Account created",
+          description: "Please check your email to verify your account.",
+        });
       }
     } catch (error) {
       const e = error as AuthError;
@@ -156,4 +158,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+} 

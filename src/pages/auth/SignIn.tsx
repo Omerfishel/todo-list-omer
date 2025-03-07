@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Navbar } from '@/components/Navbar';
 import { AlertCircle } from 'lucide-react';
 
 export function SignIn() {
@@ -42,15 +43,11 @@ export function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative">
-      {/* Background image with blur effect */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 blur-sm" 
-        style={{backgroundImage: 'url("/lovable-uploads/4b627d5e-ceb0-4d31-8af9-af9ef2491879.png")'}}
-      />
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
+      <Navbar />
       
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
-        <Card className="w-full max-w-md animate-fadeIn bg-white/90 backdrop-blur-sm">
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md animate-fadeIn">
           <CardHeader>
             <CardTitle className="text-center text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
               Sign in
