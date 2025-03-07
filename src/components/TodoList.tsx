@@ -18,15 +18,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { MapPicker } from './MapPicker';
 import { CalendarView } from './CalendarView';
+
 type SortOption = 'modified' | 'reminder' | 'urgency' | 'created';
 type UrgencyLevel = 'low' | 'medium' | 'high' | 'urgent';
-interface TodoItemExtended extends TodoItem {
-  description?: string;
-}
-interface TodoItemProps {
-  todo: TodoItemExtended;
-  viewMode: 'grid' | 'list';
-}
+
 const PASTEL_COLORS = ['#F2FCE2',
 // Soft Green
 '#FEF7CD',
@@ -43,10 +38,12 @@ const PASTEL_COLORS = ['#F2FCE2',
 // Soft Blue
 '#F1F0FB' // Soft Gray
 ];
+
 const getRandomPastelColor = () => {
   const randomIndex = Math.floor(Math.random() * PASTEL_COLORS.length);
   return PASTEL_COLORS[randomIndex];
 };
+
 const TodoItemComponent = ({
   todo,
   viewMode
@@ -76,10 +73,12 @@ const TodoItemComponent = ({
   } | null>(todo.location);
   const [editUrgency, setEditUrgency] = useState<UrgencyLevel>(todo.urgency || 'low');
   const [selectedTime, setSelectedTime] = useState(editReminder ? format(editReminder, 'HH:mm') : '');
+
   const {
     user
   } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
+
   const createDustParticles = () => {
     const container = document.getElementById(`todo-${todo.id}`);
     if (!container) return;
@@ -100,6 +99,7 @@ const TodoItemComponent = ({
       container.appendChild(particle);
     }
   };
+
   const handleDeleteWithEffect = () => {
     setIsDeleting(true);
     setDustEffect(true);
@@ -108,6 +108,7 @@ const TodoItemComponent = ({
       deleteTodo(todo.id);
     }, 800);
   };
+
   const handleComplete = () => {
     toggleTodo(todo.id);
     const element = document.getElementById(`todo-${todo.id}`);
@@ -118,6 +119,7 @@ const TodoItemComponent = ({
       }, 800);
     }
   };
+
   useEffect(() => {
     let isMounted = true;
     const loadImage = async () => {
@@ -142,11 +144,13 @@ const TodoItemComponent = ({
       isMounted = false;
     };
   }, [todo.title, todo.id]);
+
   const handleCategoryToggle = (categoryId: string) => {
     const currentCategories = todo.category_ids || [];
     const newCategories = currentCategories.includes(categoryId) ? currentCategories.filter(id => id !== categoryId) : [...currentCategories, categoryId];
     updateTodoCategories(todo.id, newCategories);
   };
+
   const swipeHandlers = useSwipeable({
     onSwiping: e => {
       if (isDeleting) return;
@@ -180,6 +184,7 @@ const TodoItemComponent = ({
       passive: false
     }
   });
+
   const getSwipeBackground = (translateX: number) => {
     if (translateX > 0) {
       const opacity = Math.min(Math.abs(translateX) / 200, 0.5);
@@ -190,6 +195,7 @@ const TodoItemComponent = ({
     }
     return 'white';
   };
+
   const renderCategories = (showAll: boolean = false) => <div className="flex flex-wrap gap-1">
       {categories.filter(cat => showAll || todo.category_ids?.includes(cat.id)).map(category => <button key={category.id} onClick={() => handleCategoryToggle(category.id)} className={`
               px-2 py-0.5 rounded-full text-xs transition-all
@@ -201,10 +207,12 @@ const TodoItemComponent = ({
             {category.name}
           </button>)}
     </div>;
+
   const handleSave = () => {
     updateTodoContent(todo.id, editContent, editReminder, editLocation, editTitle, editUrgency);
     setIsEditing(false);
   };
+
   const handleDiscard = () => {
     setEditTitle(todo.title);
     setEditContent(todo.content || '');
@@ -213,6 +221,7 @@ const TodoItemComponent = ({
     setEditUrgency(todo.urgency || 'low');
     setIsEditing(false);
   };
+
   const getUrgencyColor = (level: UrgencyLevel = 'low') => {
     switch (level) {
       case 'urgent':
@@ -227,9 +236,11 @@ const TodoItemComponent = ({
         return 'bg-gray-100 text-gray-700';
     }
   };
+
   const renderUrgencyBadge = () => <div className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(todo.urgency)}`}>
       {todo.urgency || 'low'}
     </div>;
+
   return <>
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -500,6 +511,7 @@ const TodoItemComponent = ({
       </div>
     </>;
 };
+
 export const TodoList = () => {
   const {
     todos,
@@ -530,10 +542,12 @@ export const TodoList = () => {
     lng: number;
   } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
+
   const handleOpenCategoryDialog = () => {
     setNewCategoryColor(getRandomPastelColor());
     setIsNewCategoryDialogOpen(true);
   };
+
   const renderCategoryTags = () => <div className="flex flex-wrap gap-2 mb-4">
       <Button variant={categoryFilter === '' ? 'default' : 'outline'} onClick={() => setCategoryFilter('')} size="sm">
         All
@@ -557,6 +571,7 @@ export const TodoList = () => {
           </Button>
         </div>)}
     </div>;
+
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -579,6 +594,7 @@ export const TodoList = () => {
       console.error('Error adding todo:', error);
     }
   };
+
   const handleAddCategory = async () => {
     try {
       if (newCategoryName.trim()) {
@@ -592,6 +608,7 @@ export const TodoList = () => {
       console.error('Error adding category:', error);
     }
   };
+
   const sortTodos = (todos: TodoItemExtended[]) => {
     return [...todos].sort((a, b) => {
       switch (sortBy) {
@@ -615,6 +632,7 @@ export const TodoList = () => {
       }
     });
   };
+
   const filteredTodos = todos.filter(todo => {
     const matchesFilter = filter === 'all' || (filter === 'completed' ? todo.completed : !todo.completed);
     const matchesCategory = !categoryFilter || (todo.category_ids || []).includes(categoryFilter);
@@ -622,7 +640,9 @@ export const TodoList = () => {
     const matchesSearch = !searchQuery || todo.title.toLowerCase().includes(searchLower) || (todo.content || '').toLowerCase().includes(searchLower) || (todo.description || '').toLowerCase().includes(searchLower);
     return matchesFilter && matchesCategory && matchesSearch;
   });
+
   const sortedAndFilteredTodos = sortTodos(filteredTodos);
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -630,6 +650,7 @@ export const TodoList = () => {
       console.error('Error signing out:', error);
     }
   };
+
   const renderSortSelector = () => <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Sort by" />
@@ -641,6 +662,7 @@ export const TodoList = () => {
         <SelectItem value="urgency">Urgency</SelectItem>
       </SelectContent>
     </Select>;
+
   const getViewIcon = () => {
     switch (view) {
       case 'grid':
@@ -651,6 +673,7 @@ export const TodoList = () => {
         return <Calendar className="h-4 w-4" />;
     }
   };
+
   return <div className="max-w-7xl mx-auto p-6 space-y-8 animate-fadeIn overflow-x-hidden">
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -661,7 +684,6 @@ export const TodoList = () => {
           <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')} className="ml-4">
             {getViewIcon()}
           </Button>
-          
         </div>
       </div>
 
@@ -794,15 +816,21 @@ export const TodoList = () => {
       </div>
 
       <div className="space-y-6 mb-8">
-        <div className="flex justify-center gap-2 border-b pb-4">
-        <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className="w-24">
-          All
-        </Button>
-        <Button variant={filter === 'active' ? 'default' : 'outline'} onClick={() => setFilter('active')} className="w-24">
-          Active
-        </Button>
-        <Button variant={filter === 'completed' ? 'default' : 'outline'} onClick={() => setFilter('completed')} className="w-24">
-            Completed
+        <div className="flex justify-between border-b pb-4">
+          <div className="flex gap-2">
+            <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')} className="w-24">
+              All
+            </Button>
+            <Button variant={filter === 'active' ? 'default' : 'outline'} onClick={() => setFilter('active')} className="w-24">
+              Active
+            </Button>
+            <Button variant={filter === 'completed' ? 'default' : 'outline'} onClick={() => setFilter('completed')} className="w-24">
+              Completed
+            </Button>
+          </div>
+          
+          <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')}>
+            {getViewIcon()}
           </Button>
         </div>
 
