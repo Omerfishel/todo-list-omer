@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +11,7 @@ export function SignUp() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -18,8 +20,14 @@ export function SignUp() {
     try {
       setLoading(true);
       await signUp(email, password, username);
-      navigate('/auth/signin');
+      setSuccess(true);
+      // Don't navigate immediately, let the user see the success message
+      setTimeout(() => {
+        navigate('/auth/signin');
+      }, 3000); // After 3 seconds, redirect to sign in
     } catch (error) {
+      console.error("SignUp error:", error);
+    } finally {
       setLoading(false);
     }
   };
@@ -33,62 +41,72 @@ export function SignUp() {
             Sign up to start managing your tasks.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        {success ? (
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                placeholder="Choose a username"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="Enter your email"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Create a password"
-                minLength={6}
-              />
+            <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+              <h3 className="font-bold">Account created successfully!</h3>
+              <p>Please check your email to verify your account.</p>
+              <p className="mt-2">You will be redirected to the sign in page shortly...</p>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Creating account...' : 'Sign up'}
-            </Button>
-            <p className="text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link to="/auth/signin" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Username
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  placeholder="Choose a username"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="Enter your email"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Create a password"
+                  minLength={6}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Creating account...' : 'Sign up'}
+              </Button>
+              <p className="text-center text-sm text-gray-600">
+                Already have an account?{' '}
+                <Link to="/auth/signin" className="font-medium text-indigo-600 hover:text-indigo-500">
+                  Sign in
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        )}
       </Card>
     </div>
   );
-} 
+}
