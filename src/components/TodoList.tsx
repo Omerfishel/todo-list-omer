@@ -549,6 +549,7 @@ export const TodoList = () => {
     lng: number;
   } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('modified');
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const handleOpenCategoryDialog = () => {
     setNewCategoryColor(getRandomPastelColor());
@@ -658,7 +659,8 @@ export const TodoList = () => {
     }
   };
 
-  const renderSortSelector = () => <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+  const renderSortSelector = () => (
+    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Sort by" />
       </SelectTrigger>
@@ -668,7 +670,8 @@ export const TodoList = () => {
         <SelectItem value="reminder">Reminder Date</SelectItem>
         <SelectItem value="urgency">Urgency</SelectItem>
       </SelectContent>
-    </Select>;
+    </Select>
+  );
 
   const getViewIcon = () => {
     switch (view) {
@@ -688,9 +691,11 @@ export const TodoList = () => {
           <p className="text-gray-600">Stay organized and productive</p>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')} className="ml-4">
-            {getViewIcon()}
-          </Button>
+          {isMobile && (
+            <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')} className="ml-4">
+              {getViewIcon()}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -841,9 +846,11 @@ export const TodoList = () => {
           </div>
           
           <div className="w-24 flex justify-end">
-            <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')}>
-              {getViewIcon()}
-            </Button>
+            {!isMobile && (
+              <Button variant="outline" size="icon" onClick={() => setView(prev => prev === 'calendar' ? 'grid' : prev === 'grid' ? 'list' : 'calendar')}>
+                {getViewIcon()}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -858,3 +865,4 @@ export const TodoList = () => {
         </div>
       </div>;
 };
+
