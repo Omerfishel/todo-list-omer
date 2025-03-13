@@ -54,6 +54,10 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      lineHeight: {
+        'tight': '1.15',
+        'relaxed': '1.5',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

@@ -20,9 +20,9 @@ const TeamMember = ({
     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xl font-bold mb-4">
       {name.charAt(0)}
     </div>
-    <h3 className="text-xl font-semibold mb-1">{name}</h3>
+    <h3 className="text-xl font-semibold mb-1 leading-relaxed">{name}</h3>
     <p className="text-indigo-600 mb-3">{role}</p>
-    <p className="text-gray-600">{description}</p>
+    <p className="text-gray-600 leading-relaxed">{description}</p>
   </div>
 );
 
@@ -43,8 +43,8 @@ const ValueCard = ({
     <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
       <Icon className="h-8 w-8 text-indigo-600" />
     </div>
-    <h3 className="text-xl font-semibold mb-2">{title}</h3>
-    <p className="text-gray-600">{description}</p>
+    <h3 className="text-xl font-semibold mb-2 leading-relaxed">{title}</h3>
+    <p className="text-gray-600 leading-relaxed">{description}</p>
   </div>
 );
 
@@ -77,10 +77,10 @@ export function About() {
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent opacity-0 translate-y-10 scroll-hidden">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient leading-tight">
               About TaskMaster
             </h1>
-            <p className="text-xl text-gray-600 mb-8 opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '100ms' }}>
+            <p className="text-xl text-gray-600 mb-8 opacity-0 translate-y-10 scroll-hidden leading-relaxed" style={{ transitionDelay: '100ms' }}>
               We're on a mission to help people and teams achieve more by staying organized and focused on what matters most.
             </p>
             <div className="w-24 h-1 bg-gradient-to-r from-indigo-500 to-purple-600 mx-auto opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '200ms' }}></div>
@@ -98,17 +98,17 @@ export function About() {
               </div>
             </div>
             <div className="md:w-1/2">
-              <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent opacity-0 translate-y-10 scroll-hidden">
+              <h2 className="text-3xl font-bold mb-6 text-gradient leading-tight opacity-0 translate-y-10 scroll-hidden">
                 Our Story
               </h2>
               <div className="space-y-4">
-                <p className="text-gray-600 opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '100ms' }}>
+                <p className="text-gray-600 opacity-0 translate-y-10 scroll-hidden leading-relaxed" style={{ transitionDelay: '100ms' }}>
                   TaskMaster was founded in 2022 with a simple goal: to create a task management solution that's both powerful and intuitive. We noticed that existing tools were either too complex or too simplistic, leaving many users frustrated.
                 </p>
-                <p className="text-gray-600 opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '200ms' }}>
+                <p className="text-gray-600 opacity-0 translate-y-10 scroll-hidden leading-relaxed" style={{ transitionDelay: '200ms' }}>
                   Our team of designers and developers, who were themselves struggling with productivity, set out to build the perfect solution. After months of research, development, and testing, TaskMaster was born.
                 </p>
-                <p className="text-gray-600 opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '300ms' }}>
+                <p className="text-gray-600 opacity-0 translate-y-10 scroll-hidden leading-relaxed" style={{ transitionDelay: '300ms' }}>
                   Today, thousands of individuals and teams rely on TaskMaster to stay organized, meet deadlines, and achieve their goals. We continue to improve the platform based on user feedback and emerging productivity research.
                 </p>
               </div>
@@ -121,10 +121,10 @@ export function About() {
       <section className="py-16 bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent opacity-0 translate-y-10 scroll-hidden">
+            <h2 className="text-3xl font-bold mb-4 text-gradient leading-tight opacity-0 translate-y-10 scroll-hidden">
               Our Values
             </h2>
-            <p className="text-xl text-gray-600 opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '100ms' }}>
+            <p className="text-xl text-gray-600 opacity-0 translate-y-10 scroll-hidden leading-relaxed" style={{ transitionDelay: '100ms' }}>
               These core principles guide everything we do at TaskMaster
             </p>
           </div>
@@ -156,10 +156,10 @@ export function About() {
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent opacity-0 translate-y-10 scroll-hidden">
+            <h2 className="text-3xl font-bold mb-4 text-gradient leading-tight opacity-0 translate-y-10 scroll-hidden">
               Meet Our Team
             </h2>
-            <p className="text-xl text-gray-600 opacity-0 translate-y-10 scroll-hidden" style={{ transitionDelay: '100ms' }}>
+            <p className="text-xl text-gray-600 opacity-0 translate-y-10 scroll-hidden leading-relaxed" style={{ transitionDelay: '100ms' }}>
               The talented people behind TaskMaster
             </p>
           </div>
@@ -208,10 +208,10 @@ export function About() {
       {/* Join Us CTA */}
       <section className="py-20 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 translate-y-10 scroll-hidden">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4 text-white">
+          <h2 className="text-3xl font-bold mb-4 text-white leading-relaxed pb-1">
             Join Our Mission
           </h2>
-          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto leading-relaxed">
             We're always looking for talented individuals who are passionate about productivity and building great products.
           </p>
           <a href="#" className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50 transform transition-transform hover:scale-105">

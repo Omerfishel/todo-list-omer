@@ -42,7 +42,7 @@ const FeatureCard = ({
 }) => (
   <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 ${className}`}>
     <Icon className="h-12 w-12 mb-4" />
-    <h3 className="text-xl font-semibold mb-2 text-gray-900">{title}</h3>
+    <h3 className="text-xl font-semibold mb-2 text-gray-900 leading-relaxed">{title}</h3>
     <p className="text-gray-600">{description}</p>
   </div>
 );
@@ -61,7 +61,7 @@ const Testimonial = ({
 }) => (
   <div className={`bg-white p-8 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden ${className}`}>
     <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-200 to-indigo-200 rounded-bl-full opacity-20"></div>
-    <div className="text-xl text-gray-700 italic mb-6">"{quote}"</div>
+    <div className="text-xl text-gray-700 italic mb-6 leading-relaxed">"{quote}"</div>
     <div className="flex items-center">
       <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
         {author.charAt(0)}
@@ -87,10 +87,10 @@ export function Landing() {
         <div className="container px-4 mx-auto">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-12 md:mb-0 md:pr-12">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 opacity-0 translate-y-10 scroll-hidden transition-all duration-700 delay-100">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 opacity-0 translate-y-10 scroll-hidden transition-all duration-700 delay-100 leading-tight">
                 Stay organized, <span className="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">achieve more</span>
               </h1>
-              <p className="text-lg md:text-xl text-gray-600 mb-8 opacity-0 translate-y-10 scroll-hidden transition-all duration-700 delay-200">
+              <p className="text-lg md:text-xl text-gray-600 mb-8 opacity-0 translate-y-10 scroll-hidden transition-all duration-700 delay-200 leading-relaxed">
                 TaskMaster helps you manage your tasks efficiently, so you can focus on what really matters. Simple, intuitive, and powerful.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 opacity-0 translate-y-10 scroll-hidden transition-all duration-700 delay-300">
@@ -150,10 +150,10 @@ export function Landing() {
       {/* App Demo GIF Section */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white opacity-0 translate-y-10 scroll-hidden transition-all duration-700">
         <div className="container px-4 mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient leading-tight">
             See TaskMaster in action
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
             Streamline your workflow with our intuitive interface and powerful features
           </p>
           <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
@@ -178,10 +178,10 @@ export function Landing() {
       <section className="py-16 bg-gradient-to-b from-white to-gray-50" id="features">
         <div className="container px-4 mx-auto">
           <div className="text-center mb-16 opacity-0 translate-y-10 scroll-hidden transition-all duration-700">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gradient leading-tight">
               Everything you need to stay organized
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               TaskMaster comes packed with all the tools you need to manage your tasks efficiently.
             </p>
           </div>
@@ -236,10 +236,10 @@ export function Landing() {
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white opacity-0 translate-y-10 scroll-hidden transition-all duration-700">
         <div className="container px-4 mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gradient leading-tight">
               What our users say
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Join thousands of satisfied users who have transformed their productivity with TaskMaster
             </p>
           </div>
@@ -272,10 +272,10 @@ export function Landing() {
       {/* CTA Section with Animation */}
       <section className="py-20 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 translate-y-10 scroll-hidden transition-all duration-700">
         <div className="container px-4 mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white leading-relaxed pb-1">
             Ready to get organized?
           </h2>
-          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto leading-relaxed">
             Join thousands of users who have transformed their productivity with TaskMaster.
           </p>
           {user ? (
@@ -312,7 +312,7 @@ export function Landing() {
                   TaskMaster
                 </span>
               </div>
-              <p className="mt-4 max-w-xs text-gray-400">
+              <p className="mt-4 max-w-xs text-gray-400 leading-relaxed">
                 The simple and effective way to organize your tasks and boost productivity.
               </p>
             </div>
